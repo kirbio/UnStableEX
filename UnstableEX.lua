@@ -1,7 +1,7 @@
 --- STEAMODDED HEADER
 --- MOD_NAME: UnStableEX
 --- MOD_ID: UNSTBEX
---- MOD_AUTHOR: [Kirbio, Ram]
+--- MOD_AUTHOR: [Kirbio, RamChops Games]
 --- MOD_DESCRIPTION: Add-on for the UnStable mod to extend the support to other mods
 --- DEPENDENCIES: [Steamodded>=1.0.0~ALPHA-0812d]
 --- BADGE_COLOR: 41c300
@@ -10,9 +10,9 @@
 ----------------------------------------------
 ------------MOD CODE -------------------------
 
-local unStbEX = SMODS.current_mod
+local unstbex = SMODS.current_mod
 local filesystem = NFS or love.filesystem
-local path = unStbEX.path
+local path = unstbex.path
 
 --Localization Messages
 --local loc = filesystem.load(path..'localization.lua')()
@@ -214,7 +214,7 @@ local ortalab_index = SMODS.Centers['m_ortalab_index']
 ortalab_index.set_ability = function(self, card, initial, delay_sprites)
 		print('call set ability')
 
-		if card.base then
+		if card.base and card.ability and card.ability.extra and type(card.ability.extra) == 'table' then
 			if card.ability.extra.index_state == 'MID' then
 				card.ability.extra.mainrank = card.base.value
             elseif card.ability.extra.index_state == 'UP' then
@@ -226,7 +226,7 @@ ortalab_index.set_ability = function(self, card, initial, delay_sprites)
     end
 
 ortalab_index.set_sprites = function(self, card, front)
-        if card.ability and card.ability.extra then 
+        if card.ability and card.ability.extra and type(card.ability.extra) == 'table' then 
 			
             if card.ability.extra.index_state == 'MID' then
 				card.children.center:set_sprite_pos({x = 2, y = 0}) 
@@ -256,7 +256,7 @@ ortalab_index.update = function(self, card)
 				end
 			end
 			
-			print('main card value changed to '.. card.ability.extra.mainrank)
+			--print('main card value changed to '.. card.ability.extra.mainrank)
 		end
     end
 
@@ -304,6 +304,7 @@ G.FUNCS.decrease_index = function(e, mute, nosave)
 end
 
 --More safety check
+--[[
 G.FUNCS.index_card_increase = function(e)
 	
 	if not e.config.ref_table.ability.extra or type(e.config.ref_table.ability.extra) ~= 'table' then
@@ -353,7 +354,7 @@ G.FUNCS.index_card_decrease = function(e)
         e.config.colour = G.C.UI.BACKGROUND_INACTIVE
         e.config.button = nil
     end
-end
+end]]
 
 end
 
