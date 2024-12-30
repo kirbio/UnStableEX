@@ -132,6 +132,72 @@ register_suit_group("suit_red", "six_Stars")
 register_suit_group("no_smear", "Inks_Inks")
 register_suit_group("no_smear", "Inks_Color")]]
 
+--General Helper function for rank increment / decrement
+
+--Insert "prev" property into SMODS.Ranks
+for _, rank in pairs(SMODS.Ranks) do
+	
+	--Initialize
+	if not rank.prev then
+		rank.prev = {}
+	end
+	
+	next_rank_list = rank.next
+	
+	for i=1, #next_rank_list do
+		local next_rank = SMODS.Ranks[next_rank_list[i]]
+		local prev = next_rank.prev or {}
+		table.insert(prev, rank.key)
+		next_rank.prev = prev
+	end
+end
+
+--Utility function to get the next rank by specified step, walked using the same algorithm as SMODS Implementation of Strength Tarot
+--Negative Step is also ok
+function get_next_x_rank(rank, step)
+	local currentRank = SMODS.Ranks[rank]
+	
+	if not currentRank then 
+		return 'unstb_???' --Fallback, if the rank is invalid then returning ??? rank card
+	end
+	
+	local behavior
+	local new_rank
+	
+	local mul = (step > 0 and 1) or -1
+	
+	--Based on SMODS Current implementation of Strength
+	for i=mul, step, mul do
+		behavior = currentRank.strength_effect or { fixed = 1, ignore = false, random = false }
+		if behavior.ignore or not next(currentRank.next) then
+			return rank
+		elseif behavior.random then
+			-- TODO doesn't respect in_pool
+			if mul>0 then
+				new_rank = pseudorandom_element(currentRank.next, pseudoseed('nextrank'))
+			else
+				new_rank = pseudorandom_element(currentRank.prev, pseudoseed('prevrank'))
+			end
+			
+		else
+			if mul>0 then
+				local ii = (behavior.fixed and currentRank.next[behavior.fixed]) and behavior.fixed or 1
+				new_rank = currentRank.next[ii]
+			else
+				local ii = (behavior.fixed and currentRank.prev[behavior.fixed]) and behavior.fixed or 1
+				new_rank = currentRank.prev and currentRank.prev[ii] or currentRank.key
+			end
+			
+		end
+		
+		currentRank = SMODS.Ranks[new_rank]
+		--print(SMODS.Ranks[new_rank].key)
+	end
+	
+	return new_rank or rank 
+
+end
+
 --Hook to Familiar's set_sprite_suits to account for new ranks
 local unstb_ranks_pos = {['unstb_0'] = 6,
 						['unstb_0.5'] = 2,
@@ -355,6 +421,45 @@ G.FUNCS.index_card_decrease = function(e)
         e.config.button = nil
     end
 end]]
+
+print("Inject Ortalab Flag Loteria")
+
+local ortalab_lot_flag = SMODS.Centers['c_ortalab_lot_flag']
+
+--Reimplementation to use UnStable version of get_next_x_rank
+ortalab_lot_flag.use = function(self, card, area, copier)
+	print("UnstbEX version")
+
+	track_usage(card.config.center.set, card.config.center_key)
+	local options = {}
+	for i=1, card.ability.extra.rank_change do
+		table.insert(options, i)
+	end
+	for i=1, #G.hand.highlighted do
+		local percent = 1.15 - (i-0.999)/(#G.hand.highlighted-0.998)*0.3
+		G.E_MANAGER:add_event(Event({trigger = 'after',delay = 0.15,func = function() G.hand.highlighted[i]:flip();play_sound('card1', percent);G.hand.highlighted[i]:juice_up(0.3, 0.3);return true end }))
+	end
+	for _, card in pairs(G.hand.highlighted) do
+		local sign = pseudorandom(pseudoseed('flag_sign')) > 0.5 and 1 or -1
+		local change = pseudorandom_element(options, pseudoseed('flag_change'))
+		for i=1, change do
+			G.E_MANAGER:add_event(Event({trigger = 'after',delay = 0.4,func = function()
+				--card.base.id = card.base.id+sign
+				--local rank_suffix = get_rank_suffix(card)
+				
+				local new_rank = get_next_x_rank(card.base.value, sign)
+				assert(SMODS.change_base(card, nil, new_rank))
+			return true end }))
+		end
+		-- card_eval_status_text(card, 'extra', nil, nil, nil, {message = tostring(sign*change), colour = G.ARGS.LOC_COLOURS.loteria, delay = 0.4})
+	end
+	for i=1, #G.hand.highlighted do
+		local percent = 0.85 + (i-0.999)/(#G.hand.highlighted-0.998)*0.3
+		G.E_MANAGER:add_event(Event({trigger = 'after',delay = 0.15,func = function() G.hand.highlighted[i]:flip();play_sound('tarot2', percent, 0.6);G.hand.highlighted[i]:juice_up(0.3, 0.3);return true end }))
+	end
+	G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.2,func = function() G.hand:unhighlight_all(); return true end }))
+	delay(0.5)
+end
 
 end
 
