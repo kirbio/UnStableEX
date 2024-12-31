@@ -26,6 +26,51 @@ end
 
 print("Starting UnstableEX")
 
+--Utility
+
+--Auto event scheduler, based on Bunco
+local function event(config)
+    local e = Event(config)
+    G.E_MANAGER:add_event(e)
+    return e
+end
+
+local function big_juice(card)
+    card:juice_up(0.7)
+end
+
+local function extra_juice(card)
+    card:juice_up(0.6, 0.1)
+end
+
+local function play_nope_sound()
+	--Copied from Wheel of Fortune lol
+	event({trigger = 'after', delay = 0.06*G.SETTINGS.GAMESPEED, blockable = false, blocking = false, func = function()
+           play_sound('tarot2', 0.76, 0.4);return true end})
+    play_sound('tarot2', 1, 0.4)
+end
+
+local function forced_message(message, card, color, delay, juice)
+    if delay == true then
+        delay = 0.7 * 1.25
+    elseif delay == nil then
+        delay = 0
+    end
+
+    event({trigger = 'before', delay = delay, func = function()
+
+        if juice then big_juice(juice) end
+
+        card_eval_status_text(
+            card,
+            'extra',
+            nil, nil, nil,
+            {message = message, colour = color, instant = true}
+        )
+        return true
+    end})
+end
+
 -- Index-based coordinates generation
 
 local function get_coordinates(position, width)
@@ -132,72 +177,146 @@ register_suit_group("suit_red", "six_Stars")
 
 register_suit_group("no_smear", "Inks_Inks")
 register_suit_group("no_smear", "Inks_Color")]]
+if (SMODS.Mods["Bunco"] or {}).can_load then
 
---General Helper function for rank increment / decrement
+print("Inject Bunco Jokers")
 
---Insert "prev" property into SMODS.Ranks
-for _, rank in pairs(SMODS.Ranks) do
-	
-	--Initialize
-	if not rank.prev then
-		rank.prev = {}
-	end
-	
-	next_rank_list = rank.next
-	
-	for i=1, #next_rank_list do
-		local next_rank = SMODS.Ranks[next_rank_list[i]]
-		local prev = next_rank.prev or {}
-		table.insert(prev, rank.key)
-		next_rank.prev = prev
+local bunc_pawn = SMODS.Centers['j_bunc_pawn']
+
+--Blacklist ranks for Pawn
+local pawn_rank_blacklist = {
+	['Ace'] = true,
+	['unstb_21'] = true,
+	['unstb_???'] = true,
+}
+
+bunc_pawn.calculate = function(self, card, context)
+	if context.after and context.scoring_hand and not context.blueprint then
+		for i = 1, #context.scoring_hand do
+			local condition = false
+			local other_card = context.scoring_hand[i]
+			local rank = math.huge
+			for _, deck_card in ipairs(G.playing_cards) do
+				local newrank = deck_card.base.nominal + (deck_card.base.face_nominal or 0)
+				if newrank < rank and (not deck_card.config.center.no_rank or deck_card.config.center ~= G.P_CENTERS.m_stone) then
+					rank = newrank
+				end
+			end
+			if other_card.base.nominal == rank and not pawn_rank_blacklist[other_card.base.value] then
+				condition = true
+				event({trigger = 'after', delay = 0.15, func = function() other_card:flip(); play_sound('card1', 1); other_card:juice_up(0.3, 0.3); return true end })
+				event({
+					trigger = 'after',
+					delay = 0.1,
+					func = function()
+						local new_rank = get_next_x_rank(other_card.base.value, 1)
+						assert(SMODS.change_base(other_card, nil, new_rank))
+						return true
+					end
+				})
+				event({trigger = 'after', delay = 0.15, func = function() other_card:flip(); play_sound('tarot2', 1, 0.6); big_juice(card); other_card:juice_up(0.3, 0.3); return true end })
+			end
+			if condition then delay(0.7 * 1.25) end
+		end
 	end
 end
 
---Utility function to get the next rank by specified step, walked using the same algorithm as SMODS Implementation of Strength Tarot
---Negative Step is also ok
-function get_next_x_rank(rank, step)
-	local currentRank = SMODS.Ranks[rank]
-	
-	if not currentRank then 
-		return 'unstb_???' --Fallback, if the rank is invalid then returning ??? rank card
+local bunc_zero_shapiro = SMODS.Centers['j_bunc_zero_shapiro']
+
+local zeroshapiro_zerorank = {
+	['unstb_0'] = true,
+	['unstb_???'] = true,
+	['Jack'] = true,
+	['Queen'] = true,
+	['King'] = true,
+}
+
+bunc_zero_shapiro.calculate = function(self, card, context)
+	if context.individual and context.cardarea == G.play then
+		--print("UnStbEX version")
+		if context.other_card.config.center.no_rank or zeroshapiro_zerorank[context.other_card.base.value] then
+
+			local old_amount = card.ability.extra.amount
+			card.ability.extra.amount = card.ability.extra.amount + card.ability.extra.bonus
+
+			for k, v in pairs(G.GAME.probabilities) do
+				G.GAME.probabilities[k] = G.GAME.probabilities[k] / old_amount * card.ability.extra.amount
+			end
+
+			return { --TO DO: Adds a proper localization for this
+				extra = {message = '+X'..card.ability.extra.bonus..' '..'Chance', colour = G.C.GREEN},
+				card = card
+			}
+		end
 	end
-	
-	local behavior
-	local new_rank
-	
-	local mul = (step > 0 and 1) or -1
-	
-	--Based on SMODS Current implementation of Strength
-	for i=mul, step, mul do
-		behavior = currentRank.strength_effect or { fixed = 1, ignore = false, random = false }
-		if behavior.ignore or not next(currentRank.next) then
-			return rank
-		elseif behavior.random then
-			-- TODO doesn't respect in_pool
-			if mul>0 then
-				new_rank = pseudorandom_element(currentRank.next, pseudoseed('nextrank'))
-			else
-				new_rank = pseudorandom_element(currentRank.prev, pseudoseed('prevrank'))
+
+	if context.end_of_round and not context.other_card then
+		if card.ability.extra.amount ~= 1 then
+			for k, v in pairs(G.GAME.probabilities) do
+				G.GAME.probabilities[k] = v / card.ability.extra.amount
 			end
-			
-		else
-			if mul>0 then
-				local ii = (behavior.fixed and currentRank.next[behavior.fixed]) and behavior.fixed or 1
-				new_rank = currentRank.next[ii]
-			else
-				local ii = (behavior.fixed and currentRank.prev[behavior.fixed]) and behavior.fixed or 1
-				new_rank = currentRank.prev and currentRank.prev[ii] or currentRank.key
-			end
-			
+
+			card.ability.extra.amount = 1
+
+			forced_message(localize('k_reset'), card, G.C.GREEN, true)
+		end
+	end
+
+	if context.selling_self then
+		for k, v in pairs(G.GAME.probabilities) do
+			G.GAME.probabilities[k] = v / card.ability.extra.amount
+		end
+
+		card.ability.extra.amount = 1
+	end
+end
+
+local bunc_crop_circles = SMODS.Centers['j_bunc_crop_circles']
+
+local crop_circles_rank_mult = {
+	['unstb_0'] = 1,
+	['unstb_0.5'] = 1,
+	['6'] = 1,
+	['8'] = 2,
+	['9'] = 1,
+	['10'] = 1,
+	['Queen'] = 1,
+}
+
+--Implemented differently than in Bunco, but should yield the same result
+bunc_crop_circles.calculate = function(self, card, context)
+	if context.individual and context.cardarea == G.play then
+		local other_card = context.other_card
+		local total_mult = 0
+		
+		--Check suit
+		if not other_card.config.center.no_suit then
+			if other_card.base.suit == 'bunc_Fleurons' then
+				total_mult = total_mult + 4
+			elseif other_card.base.suit == 'Clubs' then
+				total_mult = total_mult + 3
+			end			
 		end
 		
-		currentRank = SMODS.Ranks[new_rank]
-		--print(SMODS.Ranks[new_rank].key)
+		--Check rank
+		if not other_card.config.center.no_rank then
+			if crop_circles_rank_mult[other_card.base.value] then
+				total_mult = total_mult + crop_circles_rank_mult[other_card.base.value]
+			end
+		end
+		
+		--If the amount is greater than 0, grant the bonus w/ animation
+		if total_mult > 0 then
+			return {
+				mult = total_mult,
+				card = card
+            }
+		end
 	end
-	
-	return new_rank or rank 
+end
 
 end
+
 
 --Hook to Familiar's set_sprite_suits to account for new ranks
 local unstb_ranks_pos = {['unstb_0'] = 6,
@@ -429,7 +548,7 @@ local ortalab_lot_flag = SMODS.Centers['c_ortalab_lot_flag']
 
 --Reimplementation to use UnStable version of get_next_x_rank
 ortalab_lot_flag.use = function(self, card, area, copier)
-	print("UnstbEX version")
+	--print("UnStbEX version")
 
 	track_usage(card.config.center.set, card.config.center_key)
 	local options = {}
@@ -444,10 +563,7 @@ ortalab_lot_flag.use = function(self, card, area, copier)
 		local sign = pseudorandom(pseudoseed('flag_sign')) > 0.5 and 1 or -1
 		local change = pseudorandom_element(options, pseudoseed('flag_change'))
 		for i=1, change do
-			G.E_MANAGER:add_event(Event({trigger = 'after',delay = 0.4,func = function()
-				--card.base.id = card.base.id+sign
-				--local rank_suffix = get_rank_suffix(card)
-				
+			G.E_MANAGER:add_event(Event({trigger = 'after',delay = 0.4,func = function()	
 				local new_rank = get_next_x_rank(card.base.value, sign)
 				assert(SMODS.change_base(card, nil, new_rank))
 			return true end }))
