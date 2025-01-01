@@ -366,6 +366,24 @@ function set_sprite_suits(card, juice)
 		
 	end
 end
+
+print("Inject Familiar Vigor Fortune Card")
+
+local familiar_vigor = SMODS.Centers['c_fam_vigor']
+
+--Reimplemented Familiar Vigor Fortune Card to use get_next_x_rank instead
+familiar_vigor.use = function(self, card)
+	for i = 1, #G.hand.highlighted do
+		for j = 1, 3 do
+			G.E_MANAGER:add_event(Event({trigger = 'after',delay = 0.1,func = function()
+				local card = G.hand.highlighted[i]
+				local new_rank = get_next_x_rank(card.base.value, 1)
+				assert(SMODS.change_base(card, nil, new_rank))
+				card:juice_up(0.3, 0.5)
+			return true end }))
+		end
+	end  
+end
 	
 end
 
@@ -390,11 +408,11 @@ end
 
 --print(inspectDepth(rankMap))
 
---Inject new property into Ortalab index card
 if (SMODS.Mods["ortalab"] or {}).can_load then
 
 print('Inject Ortalab Index Card')
 
+--Inject new property into Ortalab index card
 local ortalab_index = SMODS.Centers['m_ortalab_index']
 
 ortalab_index.set_ability = function(self, card, initial, delay_sprites)
