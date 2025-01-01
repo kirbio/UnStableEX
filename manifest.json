@@ -1,0 +1,16 @@
+{
+    "name": "UnStableEX",
+    "id": "UnStableEX",
+    "version": "0.1.0",
+    "website_url": "TO-DO: Put git repo URL here",
+    "description": "Add-on for the UnStable mod to extend the support for other mods",
+    "prefix": "unstbex",
+    "author": ["Kirbio"],
+    "main_file": "main.lua",
+    "priority": 99999,
+    "badge_colour": "41c300",
+    "dependencies": [
+        "Steamodded (>=1.0.0~ALPHA-1217a)",
+		"UnStable"
+    ]
+}

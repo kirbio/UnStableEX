@@ -1,16 +1,3 @@
---- STEAMODDED HEADER
---- MOD_NAME: UnStableEX
---- MOD_ID: UNSTBEX
---- MOD_AUTHOR: [Kirbio]
---- MOD_DESCRIPTION: Add-on for the UnStable mod to extend the support to other mods
---- DEPENDENCIES: [Steamodded>=1.0.0~ALPHA-1217d, UNSTB]
---- BADGE_COLOR: 41c300
---- PRIORITY: 99999
---- PREFIX: unstbex
---- VERSION: 0.1.0
-----------------------------------------------
-------------MOD CODE -------------------------
-
 local unstbex = SMODS.current_mod
 local filesystem = NFS or love.filesystem
 local path = unstbex.path
@@ -597,6 +584,3 @@ ortalab_lot_flag.use = function(self, card, area, copier)
 end
 
 end
-
-----------------------------------------------
-------------MOD CODE END----------------------
