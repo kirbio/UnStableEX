@@ -65,6 +65,18 @@ local function get_coordinates(position, width)
     return {x = (position) % width, y = math.floor((position) / width)}
 end
 
+--Mod Icon
+SMODS.Atlas {
+  -- Key for code to find it with
+  key = "modicon",
+  -- The name of the file, for the code to pull the atlas from
+  path = "modicon.png",
+  -- Width of each sprite in 1x size
+  px = 32,
+  -- Height of each sprite in 1x size
+  py = 32
+}
+
 --Creates an atlas for cards to use
 --[[SMODS.Atlas {
   -- Key for code to find it with
