@@ -105,7 +105,7 @@ SMODS.Atlas {
   -- Key for code to find it with
   key = "rank_ex_hc",
   -- The name of the file, for the code to pull the atlas from
-  path = "rank_ex.png",
+  path = "rank_ex_hc.png",
   -- Width of each sprite in 1x size
   px = 71,
   -- Height of each sprite in 1x size
