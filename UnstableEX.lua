@@ -2,6 +2,9 @@ local unstbex = SMODS.current_mod
 local filesystem = NFS or love.filesystem
 local path = unstbex.path
 
+--Global Table
+unstbex_global = {}
+
 --Localization Messages
 --local loc = filesystem.load(path..'localization.lua')()
 
@@ -12,6 +15,21 @@ local function print(message)
 end
 
 print("Starting UnstableEX")
+
+--Compat List
+
+unstbex_global.compat = {
+	Bunco = (SMODS.Mods["Bunco"] or {}).can_load,
+	Familiar = (SMODS.Mods["familiar"] or {}).can_load,
+	Ortalab = (SMODS.Mods["ortalab"] or {}).can_load,
+	Six_Suit = (SMODS.Mods["SixSuits"] or {}).can_load,
+	Inks_Color = (SMODS.Mods["InkAndColor"] or {}).can_load,
+	Cryptid = (SMODS.Mods["Cryptid"] or {}).can_load,
+}
+
+local function check_mod_active(mod_id)
+	return unstbex_global.compat[mod_id]
+end
 
 --Utility
 
@@ -176,7 +194,7 @@ register_suit_group("suit_red", "six_Stars")
 
 register_suit_group("no_smear", "Inks_Inks")
 register_suit_group("no_smear", "Inks_Color")]]
-if (SMODS.Mods["Bunco"] or {}).can_load then
+if check_mod_active("Bunco") then
 
 print("Inject Bunco Jokers")
 
@@ -327,7 +345,7 @@ local unstb_ranks_pos = {['unstb_0'] = 6,
 						['unstb_21'] = 0,
 						['unstb_???'] = 1}
 
-if (SMODS.Mods["familiar"] or {}).can_load then
+if check_mod_active("Familiar") then
 
 print('Inject Familiar set_sprite_suits')
 
@@ -407,7 +425,7 @@ end
 
 --print(inspectDepth(rankMap))
 
-if (SMODS.Mods["ortalab"] or {}).can_load then
+if check_mod_active("Ortalab") then
 
 print('Inject Ortalab Index Card')
 
@@ -595,4 +613,111 @@ ortalab_lot_flag.use = function(self, card, area, copier)
 	delay(0.5)
 end
 
+end
+
+--Hook for the game's splash screen, to initialize any data that is sensitive to the mod's order (mainly rank stuff)
+
+local ref_gamesplashscreen = Game.splash_screen
+
+function Game:splash_screen()
+ 	ref_gamesplashscreen(self)
+	
+	--Cryptid stuff has to be done on Splash Screen because of its high priority
+	if check_mod_active("Cryptid") then
+		print("Inject new nominal code override for Cryptid")
+		
+		--Inject a new property into all ranks called "nominal_order", which has the same value as the nominal chip
+		--This is because Cryptid randomize nominal chips in Misprint Deck and Glitched Edition
+		for _, rank in pairs(SMODS.Ranks) do
+			rank.nominal_order = rank.nominal
+		end
+		
+		--Override 
+		
+		local ref_card_set_base = Card.set_base
+		
+		--Basically the same code from the basegame, but swap nominal out with the new nominal_order property directly from the rank data itself
+		--TODO: Figure out the better way for this to get the value straight from the card
+		--Maybe find a way to blacklist the value so it doesn't get misprintize
+		function Card:get_nominal(mod)
+			local mult = 1
+			local rank_mult = 1
+			if mod == 'suit' then mult = 30000 end
+			if self.ability.effect == 'Stone Card' or (self.config.center.no_suit and self.config.center.no_rank) then 
+				mult = -10000
+			elseif self.config.center.no_suit then
+				mult = 0
+			elseif self.config.center.no_rank then
+				rank_mult = 0
+			end
+			--Temporary fix so the card with the lowest nominal can still be sorted properly
+			local nominal = SMODS.Ranks[self.base.value].nominal_order or 0
+			
+			if self.base.value == 'unstb_???' then
+				nominal = 0.3
+			elseif nominal < 0.4 then
+				nominal = 0.31 + nominal*0.1
+			end
+			return 10*(nominal)*rank_mult + self.base.suit_nominal*mult + (self.base.suit_nominal_original or 0)*0.0001*mult + 10*self.base.face_nominal*rank_mult + 0.000001*self.unique_val
+		end
+		
+		--Secret interaction: The "Jolly Joker" (UnStable Joker) counts as Jolly as well
+		local ref_card_is_jolly = Card.is_jolly
+		function Card:is_jolly()
+			if self.config.center.key == 'j_unstb_the_jolly_joker' then
+				return true
+			end
+			
+			return ref_card_is_jolly(self)
+		end
+		
+		--Inject Blinds effect
+		
+		print("Inject Blind effects for Cryptid")
+		
+		local blind_hammer = SMODS.Blinds['bl_cry_hammer']
+		
+		blind_hammer.recalc_debuff = function(self, card, from_blind)
+			if card.area ~= G.jokers and not G.GAME.blind.disabled then
+				if
+					card.ability.effect ~= "Stone Card"
+					and (
+						card.base.value == "3"
+						or card.base.value == "5"
+						or card.base.value == "7"
+						or card.base.value == "9"
+						or card.base.value == "Ace"
+						or card.base.value == "unstb_1"
+						or card.base.value == "unstb_21"
+						or card.base.value == "unstb_???"
+					)
+				then
+					return true
+				end
+				return false
+			end
+		end
+		
+		local blind_magic = SMODS.Blinds['bl_cry_magic']
+		
+		blind_magic.recalc_debuff = function(self, card, from_blind)
+			if card.area ~= G.jokers and not G.GAME.blind.disabled then
+				if
+					card.ability.effect ~= "Stone Card"
+					and (
+						card.base.value == "2"
+						or card.base.value == "4"
+						or card.base.value == "6"
+						or card.base.value == "8"
+						or card.base.value == "10"
+						or card.base.value == "unstb_0"
+						or card.base.value == "unstb_???"
+					)
+				then
+					return true
+				end
+				return false
+			end
+		end
+	end
 end
