@@ -107,6 +107,28 @@ SMODS.Atlas {
   py = 95
 }]]
 
+--Updated Enhancement atli to include modded suits
+SMODS.Atlas {
+  key = "enh_slop",
+  path = "enh_slop.png",
+  px = 71,
+  py = 95
+}
+
+SMODS.Atlas {
+  key = "enh_slop_hc",
+  path = "enh_slop_hc.png",
+  px = 71,
+  py = 95
+}
+
+SMODS.Atlas {
+  key = "enh_res",
+  path = "enh_res.png",
+  px = 71,
+  py = 95
+}
+
 --Atlas for extra ranks
 SMODS.Atlas {
   -- Key for code to find it with
@@ -194,6 +216,19 @@ register_suit_group("suit_red", "six_Stars")
 
 register_suit_group("no_smear", "Inks_Inks")
 register_suit_group("no_smear", "Inks_Color")]]
+
+--Update extended atlas for Slop and Resource Cards
+
+local center_unstb_slop = SMODS.Centers['m_unstb_slop']
+center_unstb_slop.suit_map = rank_suit_map
+center_unstb_slop.atlas = 'unstbex_enh_slop'
+center_unstb_slop.lc_atlas = 'unstbex_enh_slop'
+center_unstb_slop.hc_atlas = 'unstbex_enh_slop_hc'
+
+local center_unstb_resource = SMODS.Centers['m_unstb_resource']
+center_unstb_resource.suit_map = rank_suit_map
+center_unstb_resource.atlas = 'unstbex_enh_res'
+
 if check_mod_active("Bunco") then
 
 print("Inject Bunco Jokers")
@@ -615,6 +650,41 @@ end
 
 end
 
+--Cryptid Compat
+
+if check_mod_active("Cryptid") then
+--Add appropiate Jokers to the pool
+
+--Placeholder, there's no food jokers yet in UNSTB and/or EX
+--[[
+if Cryptid.food then
+	local food_jokers = {
+	
+	}
+	
+	for i = 1, #meme_jokers do
+	  Cryptid.food[#Cryptid.food+1] = food_jokers[i]
+	end
+end]]
+
+if Cryptid.memepack then
+	--Adds pretty much most shitpost-centric Joker onto it
+	local meme_jokers = {
+		"j_unstb_joker2", --Joker 2
+		"j_unstb_joker_stairs", --Joker Stairs
+		"j_unstb_plagiarism", --Plagiarism
+		"j_unstb_prssj", --prssj
+		"j_unstb_the_jolly_joker", --The Jolly too just because
+		"j_unstb_what", --69, 420. Unsure if this would break the in_pool tho
+	}
+	
+	for i = 1, #meme_jokers do
+	  Cryptid.memepack[#Cryptid.memepack+1] = meme_jokers[i]
+	end
+end
+
+end
+
 --Hook for the game's splash screen, to initialize any data that is sensitive to the mod's order (mainly rank stuff)
 
 local ref_gamesplashscreen = Game.splash_screen
@@ -626,19 +696,20 @@ function Game:splash_screen()
 	if check_mod_active("Cryptid") then
 		print("Inject new nominal code override for Cryptid")
 		
-		--Inject a new property into all ranks called "nominal_order", which has the same value as the nominal chip
+		--Make a dedicated table of rank id and the nominal order
 		--This is because Cryptid randomize nominal chips in Misprint Deck and Glitched Edition
-		for _, rank in pairs(SMODS.Ranks) do
-			rank.nominal_order = rank.nominal
+		
+		local rank_nominal_order = {}
+		
+		for key, rank in pairs(SMODS.Ranks) do
+			rank_nominal_order[key] = rank.nominal
 		end
 		
 		--Override 
 		
 		local ref_card_set_base = Card.set_base
 		
-		--Basically the same code from the basegame, but swap nominal out with the new nominal_order property directly from the rank data itself
-		--TODO: Figure out the better way for this to get the value straight from the card
-		--Maybe find a way to blacklist the value so it doesn't get misprintize
+		--Basically the same code from the basegame, but swap nominal out with the new rank_nominal_order property
 		function Card:get_nominal(mod)
 			local mult = 1
 			local rank_mult = 1
@@ -651,7 +722,7 @@ function Game:splash_screen()
 				rank_mult = 0
 			end
 			--Temporary fix so the card with the lowest nominal can still be sorted properly
-			local nominal = SMODS.Ranks[self.base.value].nominal_order or 0
+			local nominal = rank_nominal_order[self.base.value] or 0
 			
 			if self.base.value == 'unstb_???' then
 				nominal = 0.3
@@ -719,5 +790,178 @@ function Game:splash_screen()
 				return false
 			end
 		end
+	
+		--Override ://VARIABLE Code card's code
+		--Because the original code has problem with the card with modded rank
+		--Also, switch over to SMODS.change_base instead of manually building card key,
+		--which was the cause of the problem
+		
+		unstbex_global.cryptid_variable_rank = {'', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace', '', '', '', 'unstb_0', 'unstb_21', 'unstb_0.5', 'unstb_r2', 'unstb_e', 'unstb_Pi', 'unstb_1', 'unstb_???'}
+		
+		G.FUNCS.variable_apply = function()
+			local rank_table = {
+				{},
+				{ "2", "Two", "II" },
+				{ "3", "Three", "III" },
+				{ "4", "Four", "IV" },
+				{ "5", "Five", "V" },
+				{ "6", "Six", "VI" },
+				{ "7", "Seven", "VII" },
+				{ "8", "Eight", "VIII" },
+				{ "9", "Nine", "IX" },
+				{ "10", "1O", "Ten", "X", "T" },
+				{ "J", "Jack" },
+				{ "Q", "Queen" },
+				{ "K", "King" },
+				{ "A", "Ace"}, --Notably, 1 is now 1 and not Ace :P
+				{ "M" },
+				{ "nil" },
+				{}, --Not sure if I should left it blank but its used for a cheat check below??
+				
+				--UNSTB Rank
+				{"0", "O", "Zero"},
+				{"21", "Twenty-One", "TwentyOne", "XXI", "BJ"},
+				{"0.5", "O.5", "Half"},
+				{"1.4", "1.41", "Root2", "Sqrt2", "Root", "Sqrt", "r", "sq"},
+				{"2.7", "2.71","e", "Euler"},
+				{"3.1", "3.14", "22/7", "Pi", "P"},
+				{"1", "One", "1", "I"},
+				{"?", "???", "Question", "idk"},
+			}
+
+			local rank_suffix = nil
+
+			for i, v in pairs(rank_table) do
+				for j, k in pairs(v) do
+					if string.lower(G.ENTERED_RANK) == string.lower(k) then
+						rank_suffix = i
+					end
+				end
+			end
+
+			if rank_suffix then
+				G.PREVIOUS_ENTERED_RANK = G.ENTERED_RANK
+				G.GAME.USING_CODE = false
+				if rank_suffix == 15 then
+					check_for_unlock({ type = "cheat_used" })
+					local card = create_card("Joker", G.jokers, nil, nil, nil, nil, "j_jolly")
+					card:add_to_deck()
+					G.jokers:emplace(card)
+				elseif rank_suffix == 16 then
+					check_for_unlock({ type = "cheat_used" })
+					local card = create_card("Code", G.consumeables, nil, nil, nil, nil, "c_cry_crash")
+					card:add_to_deck()
+					G.consumeables:emplace(card)
+				elseif rank_suffix == 17 then
+					check_for_unlock({ type = "cheat_used" })
+					G.E_MANAGER:add_event(Event({
+						trigger = "after",
+						delay = 0.4,
+						func = function()
+							play_sound("tarot1")
+							return true
+						end,
+					}))
+					for i = 1, #G.hand.highlighted do
+						local percent = 1.15 - (i - 0.999) / (#G.hand.highlighted - 0.998) * 0.3
+						G.E_MANAGER:add_event(Event({
+							trigger = "after",
+							delay = 0.15,
+							func = function()
+								G.hand.highlighted[i]:flip()
+								play_sound("card1", percent)
+								G.hand.highlighted[i]:juice_up(0.3, 0.3)
+								return true
+							end,
+						}))
+					end
+					delay(0.2)
+					for i = 1, #G.hand.highlighted do
+						local CARD = G.hand.highlighted[i]
+						local percent = 0.85 + (i - 0.999) / (#G.hand.highlighted - 0.998) * 0.3
+						G.E_MANAGER:add_event(Event({
+							trigger = "after",
+							delay = 0.15,
+							func = function()
+								CARD:flip()
+								CARD:set_ability(
+									G.P_CENTERS[pseudorandom_element(G.P_CENTER_POOLS.Consumeables, pseudoseed("cry_variable")).key],
+									true,
+									nil
+								)
+								play_sound("tarot2", percent)
+								CARD:juice_up(0.3, 0.3)
+								return true
+							end,
+						}))
+					end
+				else
+					G.E_MANAGER:add_event(Event({
+						trigger = "after",
+						delay = 0.4,
+						func = function()
+							play_sound("tarot1")
+							return true
+						end,
+					}))
+					for i = 1, #G.hand.highlighted do
+						local percent = 1.15 - (i - 0.999) / (#G.hand.highlighted - 0.998) * 0.3
+						G.E_MANAGER:add_event(Event({
+							trigger = "after",
+							delay = 0.15,
+							func = function()
+								G.hand.highlighted[i]:flip()
+								play_sound("card1", percent)
+								G.hand.highlighted[i]:juice_up(0.3, 0.3)
+								return true
+							end,
+						}))
+					end
+					delay(0.2)
+					for i = 1, #G.hand.highlighted do
+						G.E_MANAGER:add_event(Event({
+							trigger = "after",
+							delay = 0.1,
+							func = function()
+								local card = G.hand.highlighted[i]								
+								local new_rank = unstbex_global.cryptid_variable_rank[rank_suffix]
+								
+								--Fallback
+								if not new_rank or new_rank == '' then
+									new_rank = 'unstb_???'
+								end
+								
+								SMODS.change_base(card, nil, new_rank)
+								return true
+							end,
+						}))
+					end
+					for i = 1, #G.hand.highlighted do
+						local percent = 0.85 + (i - 0.999) / (#G.hand.highlighted - 0.998) * 0.3
+						G.E_MANAGER:add_event(Event({
+							trigger = "after",
+							delay = 0.15,
+							func = function()
+								G.hand.highlighted[i]:flip()
+								play_sound("tarot2", percent, 0.6)
+								G.hand.highlighted[i]:juice_up(0.3, 0.3)
+								return true
+							end,
+						}))
+					end
+					G.E_MANAGER:add_event(Event({
+						trigger = "after",
+						delay = 0.2,
+						func = function()
+							G.hand:unhighlight_all()
+							return true
+						end,
+					}))
+					delay(0.5)
+				end
+				G.CHOOSE_RANK:remove()
+			end
+		end
+	
 	end
 end
