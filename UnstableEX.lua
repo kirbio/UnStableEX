@@ -393,10 +393,10 @@ function set_sprite_suits(card, juice)
 	if unstb_ranks_pos[card.base.value] and (card.ability.is_spade or card.ability.is_heart or card.ability.is_club or card.ability.is_diamond or card.ability.suitless) then
 		print('UnstbEX Set Sprite Suit Hook Active')
 	
-		local suit_check = {card.base.suit == 'Spades' or card.ability.is_spade,
-							card.base.suit == 'Hearts' or card.ability.is_heart,
-							card.base.suit == 'Clubs' or card.ability.is_club,
-							card.base.suit == 'Diamonds' or card.ability.is_diamond}
+		local suit_check = {card.base.suit == 'Spades' or card.ability.is_spade or false,
+							card.base.suit == 'Hearts' or card.ability.is_heart or false,
+							card.base.suit == 'Clubs' or card.ability.is_club or false,
+							card.base.suit == 'Diamonds' or card.ability.is_diamond or false}
 							
 		local suit_count = 0
 		for i=1, #suit_check do
@@ -407,7 +407,6 @@ function set_sprite_suits(card, juice)
 		
 		--Suitless, or has more than 1 suits
 		if card.ability.suitless or suit_count>1 then
-		
 			--Technically, if anyone wants to make it works properly, this would be where to check
 			--Unfortunately, I don't think I can write them all because there's a lot of combination + lots of graphic to make
 			--Hopefully there is a more elegant solution found in the future.
