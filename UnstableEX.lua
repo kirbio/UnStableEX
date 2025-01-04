@@ -219,13 +219,13 @@ register_suit_group("no_smear", "Inks_Color")]]
 
 --Update extended atlas for Slop and Resource Cards
 
-local center_unstb_slop = SMODS.Centers['m_unstb_slop']
+local center_unstb_slop = SMODS.Centers['m_unstb_slop'] or {}
 center_unstb_slop.suit_map = rank_suit_map
 center_unstb_slop.atlas = 'unstbex_enh_slop'
 center_unstb_slop.lc_atlas = 'unstbex_enh_slop'
 center_unstb_slop.hc_atlas = 'unstbex_enh_slop_hc'
 
-local center_unstb_resource = SMODS.Centers['m_unstb_resource']
+local center_unstb_resource = SMODS.Centers['m_unstb_resource'] or {}
 center_unstb_resource.suit_map = rank_suit_map
 center_unstb_resource.atlas = 'unstbex_enh_res'
 
@@ -233,7 +233,7 @@ if check_mod_active("Bunco") then
 
 print("Inject Bunco Jokers")
 
-local bunc_pawn = SMODS.Centers['j_bunc_pawn']
+local bunc_pawn = SMODS.Centers['j_bunc_pawn'] or {}
 
 --Blacklist ranks for Pawn
 local pawn_rank_blacklist = {
@@ -273,7 +273,7 @@ bunc_pawn.calculate = function(self, card, context)
 	end
 end
 
-local bunc_zero_shapiro = SMODS.Centers['j_bunc_zero_shapiro']
+local bunc_zero_shapiro = SMODS.Centers['j_bunc_zero_shapiro'] or {}
 
 local zeroshapiro_zerorank = {
 	['unstb_0'] = true,
@@ -323,7 +323,7 @@ bunc_zero_shapiro.calculate = function(self, card, context)
 	end
 end
 
-local bunc_crop_circles = SMODS.Centers['j_bunc_crop_circles']
+local bunc_crop_circles = SMODS.Centers['j_bunc_crop_circles'] or {}
 
 local crop_circles_rank_mult = {
 	['unstb_0'] = 1,
@@ -420,7 +420,7 @@ end
 
 print("Inject Familiar Vigor Fortune Card")
 
-local familiar_vigor = SMODS.Centers['c_fam_vigor']
+local familiar_vigor = SMODS.Centers['c_fam_vigor'] or {}
 
 --Reimplemented Familiar Vigor Fortune Card to use get_next_x_rank instead
 familiar_vigor.use = function(self, card)
@@ -464,7 +464,7 @@ if check_mod_active("Ortalab") then
 print('Inject Ortalab Index Card')
 
 --Inject new property into Ortalab index card
-local ortalab_index = SMODS.Centers['m_ortalab_index']
+local ortalab_index = SMODS.Centers['m_ortalab_index'] or {}
 
 ortalab_index.set_ability = function(self, card, initial, delay_sprites)
 		print('call set ability')
@@ -613,7 +613,7 @@ end]]
 
 print("Inject Ortalab Flag Loteria")
 
-local ortalab_lot_flag = SMODS.Centers['c_ortalab_lot_flag']
+local ortalab_lot_flag = SMODS.Centers['c_ortalab_lot_flag'] or {}
 
 --Reimplementation to use UnStable version of get_next_x_rank
 ortalab_lot_flag.use = function(self, card, area, copier)
@@ -745,7 +745,7 @@ function Game:splash_screen()
 		
 		print("Inject Blind effects for Cryptid")
 		
-		local blind_hammer = SMODS.Blinds['bl_cry_hammer']
+		local blind_hammer = SMODS.Blinds['bl_cry_hammer'] or {}
 		
 		blind_hammer.recalc_debuff = function(self, card, from_blind)
 			if card.area ~= G.jokers and not G.GAME.blind.disabled then
@@ -768,7 +768,7 @@ function Game:splash_screen()
 			end
 		end
 		
-		local blind_magic = SMODS.Blinds['bl_cry_magic']
+		local blind_magic = SMODS.Blinds['bl_cry_magic'] or {}
 		
 		blind_magic.recalc_debuff = function(self, card, from_blind)
 			if card.area ~= G.jokers and not G.GAME.blind.disabled then
