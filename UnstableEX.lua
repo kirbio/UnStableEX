@@ -131,37 +131,46 @@ SMODS.Atlas {
 
 --Atlas for extra ranks
 SMODS.Atlas {
-  -- Key for code to find it with
   key = "rank_ex",
-  -- The name of the file, for the code to pull the atlas from
   path = "rank_ex.png",
-  -- Width of each sprite in 1x size
   px = 71,
-  -- Height of each sprite in 1x size
   py = 95
 }
 
 SMODS.Atlas {
-  -- Key for code to find it with
   key = "rank_ex_hc",
-  -- The name of the file, for the code to pull the atlas from
   path = "rank_ex_hc.png",
-  -- Width of each sprite in 1x size
   px = 71,
-  -- Height of each sprite in 1x size
+  py = 95
+}
+
+SMODS.Atlas {
+  key = "rank_ex2",
+  path = "rank_ex2.png",
+  px = 71,
+  py = 95
+}
+
+SMODS.Atlas {
+  key = "rank_ex2_hc",
+  path = "rank_ex2_hc.png",
+  px = 71,
   py = 95
 }
 
 --Familiar's Multi-Suit Cards Fallback
 --(I don't think it is possible to make all combinations by myself, especially to account for modded suits)
 SMODS.Atlas {
-  -- Key for code to find it with
   key = "rank_ex_multi",
-  -- The name of the file, for the code to pull the atlas from
   path = "rank_ex_multi.png",
-  -- Width of each sprite in 1x size
   px = 71,
-  -- Height of each sprite in 1x size
+  py = 95
+}
+
+SMODS.Atlas {
+  key = "rank_ex2_multi",
+  path = "rank_ex2_multi.png",
+  px = 71,
   py = 95
 }
 
@@ -187,13 +196,29 @@ local rank_suit_map = {
 --SMODS.Ranks['unstb_0.5'].hc_atlas = 'unstbex_rank_ex_hc'
 --SMODS.Ranks['unstb_0.5'].suit_map = rank_suit_map
 
+--Map new atlas to the rank - new ranks now used more than 1 atlas (split off for maintenance reason)
+local rank_atlas_map = {['unstb_0'] = 'unstbex_rank_ex',
+						['unstb_0.5'] = 'unstbex_rank_ex',
+						['unstb_1'] = 'unstbex_rank_ex',
+						['unstb_r2'] = 'unstbex_rank_ex',
+						['unstb_e'] = 'unstbex_rank_ex',
+						['unstb_Pi'] = 'unstbex_rank_ex',
+						['unstb_21'] = 'unstbex_rank_ex',
+						['unstb_???'] = 'unstbex_rank_ex',
+						
+						['unstb_11'] = 'unstbex_rank_ex2',
+						['unstb_12'] = 'unstbex_rank_ex2',
+						['unstb_13'] = 'unstbex_rank_ex2',
+						['unstb_25'] = 'unstbex_rank_ex2',
+						['unstb_161'] = 'unstbex_rank_ex2',}
+
 local function inject_rank_atlas(prefix)
 	for k,v in pairs(SMODS.Ranks) do
 		if k:find(prefix) then
 			local rank = SMODS.Ranks[k]
 			
-			rank.lc_atlas = 'unstbex_rank_ex'
-			rank.hc_atlas = 'unstbex_rank_ex_hc'
+			rank.lc_atlas = rank_atlas_map[k]
+			rank.hc_atlas = rank_atlas_map[k]..'_hc'
 			rank.suit_map = rank_suit_map
 
 			print("Injecting the graphic for rank "..rank.key)
@@ -378,7 +403,13 @@ local unstb_ranks_pos = {['unstb_0'] = 6,
 						['unstb_e'] = 3,
 						['unstb_Pi'] = 4,
 						['unstb_21'] = 0,
-						['unstb_???'] = 1}
+						['unstb_???'] = 1,
+						
+						['unstb_11'] = 0,
+						['unstb_12'] = 1,
+						['unstb_13'] = 2,
+						['unstb_25'] = 3,
+						['unstb_161'] = 4,}
 
 if check_mod_active("Familiar") then
 
@@ -391,7 +422,7 @@ function set_sprite_suits(card, juice)
 	
 	--If the rank is one of the UnStable Rank, and has one of the ability
 	if unstb_ranks_pos[card.base.value] and (card.ability.is_spade or card.ability.is_heart or card.ability.is_club or card.ability.is_diamond or card.ability.suitless) then
-		print('UnstbEX Set Sprite Suit Hook Active')
+		--print('UnstbEX Set Sprite Suit Hook Active')
 	
 		local suit_check = {card.base.suit == 'Spades' or card.ability.is_spade or false,
 							card.base.suit == 'Hearts' or card.ability.is_heart or false,
@@ -411,7 +442,7 @@ function set_sprite_suits(card, juice)
 			--Unfortunately, I don't think I can write them all because there's a lot of combination + lots of graphic to make
 			--Hopefully there is a more elegant solution found in the future.
 		
-			card.children.front.atlas = G.ASSET_ATLAS['unstbex_rank_ex_multi']
+			card.children.front.atlas = G.ASSET_ATLAS[rank_atlas_map[card.base.value]..'_multi']
 			card.children.front:set_sprite_pos({x = unstb_ranks_pos[card.base.value], y = 0})
 		end
 		
@@ -450,6 +481,14 @@ local rankMap = { 	['unstb_0.5'] = {UP = 'unstb_1', MID = 'unstb_0.5' , DOWN = '
 					unstb_e = {UP = '3', MID = 'unstb_e' , DOWN = '2'},
 					unstb_Pi = {UP = '4', MID = 'unstb_Pi' , DOWN = '3'},
 					unstb_21 = {UP = 'unstb_21', MID = 'unstb_21' , DOWN = 'unstb_21'},
+					
+					unstb_11 = {UP = 'unstb_12', MID = 'unstb_11' , DOWN = '10'},
+					unstb_12 = {UP = 'unstb_13', MID = 'unstb_12' , DOWN = 'unstb_11'},
+					unstb_13 = {UP = 'unstb_13', MID = 'unstb_13' , DOWN = 'unstb_12'},
+					
+					unstb_25 = {UP = 'unstb_25', MID = 'unstb_25' , DOWN = 'unstb_25'},
+					unstb_161 = {UP = 'unstb_161', MID = 'unstb_161' , DOWN = 'unstb_161'},
+					
 					['unstb_???'] = {UP = 'unstb_???', MID = 'unstb_???' , DOWN = 'unstb_???'},
 }
 
@@ -728,6 +767,12 @@ function Game:splash_screen()
 			elseif nominal < 0.4 then
 				nominal = 0.31 + nominal*0.1
 			end
+			
+			--Hardcode this so it's sorted properly
+			if self.base.value == 'unstb_161' then
+				nominal = 30
+			end
+			
 			return 10*(nominal)*rank_mult + self.base.suit_nominal*mult + (self.base.suit_nominal_original or 0)*0.0001*mult + 10*self.base.face_nominal*rank_mult + 0.000001*self.unique_val
 		end
 		
@@ -759,6 +804,12 @@ function Game:splash_screen()
 						or card.base.value == "Ace"
 						or card.base.value == "unstb_1"
 						or card.base.value == "unstb_21"
+						
+						or card.base.value == "unstb_11"
+						or card.base.value == "unstb_13"
+						or card.base.value == "unstb_25"
+						or card.base.value == "unstb_161"
+						
 						or card.base.value == "unstb_???"
 					)
 				then
@@ -781,6 +832,7 @@ function Game:splash_screen()
 						or card.base.value == "8"
 						or card.base.value == "10"
 						or card.base.value == "unstb_0"
+						or card.base.value == "unstb_12"
 						or card.base.value == "unstb_???"
 					)
 				then
@@ -795,7 +847,7 @@ function Game:splash_screen()
 		--Also, switch over to SMODS.change_base instead of manually building card key,
 		--which was the cause of the problem
 		
-		unstbex_global.cryptid_variable_rank = {'', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace', '', '', '', 'unstb_0', 'unstb_21', 'unstb_0.5', 'unstb_r2', 'unstb_e', 'unstb_Pi', 'unstb_1', 'unstb_???'}
+		unstbex_global.cryptid_variable_rank = {'', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace', '', '', '', 'unstb_0', 'unstb_21', 'unstb_0.5', 'unstb_r2', 'unstb_e', 'unstb_Pi', 'unstb_1', 'unstb_11', 'unstb_12', 'unstb_13', 'unstb_25', 'unstb_161', 'unstb_???'}
 		
 		G.FUNCS.variable_apply = function()
 			local rank_table = {
@@ -824,7 +876,16 @@ function Game:splash_screen()
 				{"1.4", "1.41", "Root2", "Sqrt2", "Root", "Sqrt", "r", "sq"},
 				{"2.7", "2.71","e", "Euler"},
 				{"3.1", "3.14", "22/7", "Pi", "P"},
-				{"1", "One", "1", "I"},
+				{"1", "One", "I"},
+				
+				{"11", "Eleven", "XI"},
+				{"12", "Twelve", "XII"},
+				{"13", "Thirteen", "XIII"},
+				
+				{"25", "Twenty-Five", "TwentyFive", "XXV", "quad"},
+				
+				{"161", "OneHundredSixtyOne", "OneSixOne", "CLXI", "abomination"},
+				
 				{"?", "???", "Question", "idk"},
 			}
 

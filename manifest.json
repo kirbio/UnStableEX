@@ -1,7 +1,7 @@
 {
     "name": "UnStableEX",
     "id": "UnStableEX",
-    "version": "0.2.0a",
+    "version": "0.2.1",
     "website_url": "https://github.com/kirbio/UnStableEX",
     "description": "Add-on for the UnStable mod to extend the support for other mods",
     "prefix": "unstbex",
@@ -10,7 +10,7 @@
     "priority": 99999,
     "badge_colour": "41c300",
     "dependencies": [
-        "Steamodded (>=1.0.0~ALPHA-1217a)",
+        "Steamodded (>=1.0.0~ALPHA-1307d)",
 		"UnStable"
     ]
 }
