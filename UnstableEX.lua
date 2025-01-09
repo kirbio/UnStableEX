@@ -25,6 +25,7 @@ unstbex_global.compat = {
 	Six_Suit = (SMODS.Mods["SixSuits"] or {}).can_load,
 	Inks_Color = (SMODS.Mods["InkAndColor"] or {}).can_load,
 	Cryptid = (SMODS.Mods["Cryptid"] or {}).can_load,
+	CustomCards = (SMODS.Mods["CustomCards"] or {}).can_load,
 }
 
 local function check_mod_active(mod_id)
@@ -722,6 +723,37 @@ if Cryptid.memepack then
 end
 
 end
+
+-- Hook for is_suit, in case other mods injected into it and it got caught early by the UnStable's hook
+-- Currently only used by CustomCards
+
+if check_mod_active("CustomCards") then
+
+local ref_card_is_suit = Card.is_suit
+
+function Card:is_suit(suit, bypass_debuff, flush_calc, bypass_seal)
+
+	local result = ref_card_is_suit(self, suit, bypass_debuff, flush_calc, bypass_seal)
+
+	--Return early if true (suit seal case)
+	if result then 
+		return result
+	end
+
+	--If it is a trading card, check its own value
+	if self.ability and self.ability.trading then
+        local eval = self:calculate_exotic({bypass_debuff = bypass_debuff, flush_calc = flush_calc, is_suit = suit})
+        if eval then
+            return eval
+        end
+    end
+
+	--Should only return false here at this point?
+	return result
+end
+
+end
+
 
 --Hook for the game's splash screen, to initialize any data that is sensitive to the mod's order (mainly rank stuff)
 
