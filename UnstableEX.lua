@@ -26,6 +26,7 @@ unstbex_global.compat = {
 	Inks_Color = (SMODS.Mods["InkAndColor"] or {}).can_load,
 	Cryptid = (SMODS.Mods["Cryptid"] or {}).can_load,
 	CustomCards = (SMODS.Mods["CustomCards"] or {}).can_load,
+	Pokermon = (SMODS.Mods["Pokermon"] or {}).can_load,
 }
 
 local function check_mod_active(mod_id)
@@ -751,6 +752,194 @@ function Card:is_suit(suit, bypass_debuff, flush_calc, bypass_seal)
 	--Should only return false here at this point?
 	return result
 end
+
+end
+
+--Pokermon Compat
+if check_mod_active("Pokermon") then
+
+--Use get_next_x_rank instead
+local ref_poke_vary_rank = poke_vary_rank
+poke_vary_rank = function(card, decrease, seed)
+	local new_rank
+	if decrease then
+		new_rank = get_next_x_rank(card.base.value, -1)
+	elseif seed then
+		new_rank = pseudorandom_element(SMODS.Ranks, pseudoseed(seed)).key
+	else
+		new_rank = get_next_x_rank(card.base.value, 1)
+	end
+	G.E_MANAGER:add_event(Event({
+	  func = function()
+		  SMODS.change_base(card, nil, new_rank)
+		  return true
+	  end
+	})) 
+end
+
+--Inject Jokers Code
+--Oddish and Bellsprout Lines now used UnStable method of checking odd and even numbers (same as Odd Todd and Even Steven)
+
+--Oddish Line
+local poke_oddish = SMODS.Centers['j_poke_oddish'] or {}
+poke_oddish.calculate = function(self, card, context)
+	if context.individual and context.cardarea == G.play and not context.other_card.debuff then
+		if unstb_global.modulo_check(context.other_card, 2, 1) then
+			local value
+			if pseudorandom('oddish') < .50 then
+				value = card.ability.extra.mult
+			else
+				value = card.ability.extra.mult2
+			end
+			return {
+				message = localize{type = 'variable', key = 'a_mult', vars = {value}}, 
+				colour = G.C.MULT,
+				mult = value, 
+				card = card
+			}
+		end
+	end
+	return level_evo(self, card, context, "j_poke_gloom")
+end
+
+local poke_gloom = SMODS.Centers['j_poke_gloom'] or {}
+poke_gloom.calculate = function(self, card, context)
+    if context.individual and context.cardarea == G.play and not context.other_card.debuff then
+      if unstb_global.modulo_check(context.other_card, 2, 1) then
+          local value
+          if pseudorandom('gloom') < .50 then
+            value = card.ability.extra.mult
+          else
+            value = card.ability.extra.mult2
+          end
+          return {
+            message = localize{type = 'variable', key = 'a_mult', vars = {value}}, 
+            colour = G.C.MULT,
+            mult = value,
+            card = card
+          }
+      end
+    end
+    return item_evo(self, card, context)
+end
+
+local poke_vileplume = SMODS.Centers['j_poke_vileplume'] or {}
+poke_vileplume.calculate = function(self, card, context)
+    if context.individual and context.cardarea == G.play and not context.other_card.debuff then
+      if unstb_global.modulo_check(context.other_card, 2, 1) then
+          if pseudorandom('vileplume') < .50 then
+            return { 
+              x_mult = card.ability.extra.Xmult_multi,
+              card = card
+            }
+          else
+            return { 
+              mult = card.ability.extra.mult,
+              card = card
+            }
+          end
+      end
+    end
+  end
+
+local poke_bellossom = SMODS.Centers['j_poke_bellossom'] or {}
+poke_bellossom.calculate = function(self, card, context)
+    if context.before and context.cardarea == G.jokers and not context.blueprint then
+      local odds = {}
+      for k, v in ipairs(context.scoring_hand) do
+          local upgrade = pseudorandom(pseudoseed('bellossom'))
+          if (unstb_global.modulo_check(v, 2, 1)) and upgrade > .50 then
+              odds[#odds+1] = v
+              if v.ability.name == 'Wild Card' and not v.edition then
+                local edition = {polychrome = true}
+                v:set_edition(edition, true, true)
+              end
+              v:set_ability(G.P_CENTERS.m_wild, nil, true)
+              G.E_MANAGER:add_event(Event({
+                  func = function()
+                      v:juice_up()
+                      return true
+                  end
+              })) 
+          else
+            v.bellossom_score = true
+          end
+      end
+      if #odds > 0 then 
+          return {
+            message = localize("poke_petal_dance_ex"),
+              colour = G.C.MULT,
+              card = card
+          }
+      end
+    end
+    if context.individual and context.cardarea == G.play and not context.other_card.debuff then
+      if unstb_global.modulo_check(context.other_card, 2, 1) then
+          if context.other_card.bellossom_score then
+            context.other_card.bellossom_score = nil
+            return {
+              message = localize{type = 'variable', key = 'a_mult', vars = {card.ability.extra.mult}}, 
+              colour = G.C.MULT,
+              mult = card.ability.extra.mult,
+              card = card
+            }
+          end
+      end
+    end
+end
+
+local poke_bellsprout = SMODS.Centers['j_poke_bellsprout'] or {}
+poke_bellsprout.calculate = function(self, card, context)
+    if context.individual and context.cardarea == G.play and not context.other_card.debuff then
+      if unstb_global.modulo_check(context.other_card, 2, 0) then
+          return {
+            message = localize{type = 'variable', key = 'a_chips', vars = {card.ability.extra.chips}}, 
+            colour = G.C.CHIPS,
+            chips = card.ability.extra.chips,
+            card = card
+          }
+      end
+    end
+    return level_evo(self, card, context, "j_poke_weepinbell")
+end
+
+local poke_weepinbell = SMODS.Centers['j_poke_weepinbell'] or {}
+poke_weepinbell.calculate = function(self, card, context)
+    if context.individual and context.cardarea == G.play and not context.other_card.debuff then
+      if unstb_global.modulo_check(context.other_card, 2, 0) then
+          return {
+            message = localize{type = 'variable', key = 'a_chips', vars = {card.ability.extra.chips}}, 
+            colour = G.C.CHIPS,
+            chips = card.ability.extra.chips,
+            card = card
+          }
+      end
+    end
+    return item_evo(self, card, context, "j_poke_victreebel")
+end
+
+local poke_victreebel = SMODS.Centers['j_poke_victreebel'] or {}
+poke_victreebel.calculate = function(self, card, context)
+    if context.individual and context.cardarea == G.play and not context.other_card.debuff then
+      if unstb_global.modulo_check(context.other_card, 2, 0) then
+          return {
+            message = localize{type = 'variable', key = 'a_chips', vars = {card.ability.extra.chips}}, 
+            colour = G.C.CHIPS,
+            chips = card.ability.extra.chips,
+            card = card
+          }
+      end
+    end
+    if context.repetition and context.cardarea == G.play and not context.other_card.debuff then
+		if unstb_global.modulo_check(context.other_card, 2, 0) then
+		  return {
+			message = localize('k_again_ex'),
+			repetitions = card.ability.extra.retriggers,
+			card = card
+		  }
+		end
+    end
+  end
 
 end
 
