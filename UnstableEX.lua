@@ -27,6 +27,7 @@ unstbex_global.compat = {
 	Cryptid = (SMODS.Mods["Cryptid"] or {}).can_load,
 	CustomCards = (SMODS.Mods["CustomCards"] or {}).can_load,
 	Pokermon = (SMODS.Mods["Pokermon"] or {}).can_load,
+	KCVanilla = (SMODS.Mods["kcvanilla"] or {}).can_load,
 }
 
 local function check_mod_active(mod_id)
@@ -256,6 +257,15 @@ local center_unstb_resource = SMODS.Centers['m_unstb_resource'] or {}
 center_unstb_resource.suit_map = rank_suit_map
 center_unstb_resource.atlas = 'unstbex_enh_res'
 
+--Blacklist "top" ranks for many jokers
+local top_rank_blacklist = {
+	['Ace'] = true,
+	['unstb_21'] = true,
+	['unstb_25'] = true,
+	['unstb_161'] = true,
+	['unstb_???'] = true,
+}
+
 if check_mod_active("Bunco") then
 
 print("Inject Bunco Jokers")
@@ -263,11 +273,6 @@ print("Inject Bunco Jokers")
 local bunc_pawn = SMODS.Centers['j_bunc_pawn'] or {}
 
 --Blacklist ranks for Pawn
-local pawn_rank_blacklist = {
-	['Ace'] = true,
-	['unstb_21'] = true,
-	['unstb_???'] = true,
-}
 
 bunc_pawn.calculate = function(self, card, context)
 	if context.after and context.scoring_hand and not context.blueprint then
@@ -281,7 +286,7 @@ bunc_pawn.calculate = function(self, card, context)
 					rank = newrank
 				end
 			end
-			if other_card.base.nominal == rank and not pawn_rank_blacklist[other_card.base.value] then
+			if other_card.base.nominal == rank and not top_rank_blacklist[other_card.base.value] then
 				condition = true
 				event({trigger = 'after', delay = 0.15, func = function() other_card:flip(); play_sound('card1', 1); other_card:juice_up(0.3, 0.3); return true end })
 				event({
@@ -991,6 +996,105 @@ poke_victreebel.calculate = function(self, card, context)
 
 end
 
+--KCVanilla Compat
+if check_mod_active("KCVanilla") then
+
+print("Inject KCVanilla Joker")
+
+--Five Days Forecast, now used get_next_x_rank properly
+
+local function unstb_kcv_rank_up_discreetly(card)
+    -- local newcard = kcv_get_rank_up_pcard(card)
+    card.kcv_ignore_debuff_check = true
+    card.kcv_ranked_up_discreetly = true
+    -- card:set_base(newcard)
+
+    local old_rank = SMODS.Ranks[card.base.value]
+    local new_rank = get_next_x_rank(card.base.value, 1)
+    card.kcv_display_rank = card.kcv_display_rank and card.kcv_display_rank or old_rank
+
+    SMODS.change_base(card, card.base.suit, new_rank) -- Should respect "kcv_ranked_up_discreetly" as it uses card:set_base
+end
+
+local kc_5day = SMODS.Centers['j_kcvanilla_5day'] or {}
+kc_5day.calculate = function(self, card, context)
+	if context.kcv_forecast_event and context.scoring_hand then
+		if next(context.poker_hands["Straight"]) then
+			for i, other_c in ipairs(context.scoring_hand) do
+				if not top_rank_blacklist[other_c.base.value] then
+					unstb_kcv_rank_up_discreetly(other_c)
+				end
+			end
+		end
+	end
+	if context.before and context.scoring_hand then
+		if next(context.poker_hands["Straight"]) then
+			local targets = {}
+			for i, other_c in ipairs(context.scoring_hand) do
+				if other_c.kcv_ranked_up_discreetly then
+					table.insert(targets, other_c)
+				end
+			end
+
+			card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil, {
+				message = localize('k_active_ex'),
+				colour = G.C.FILTER,
+				card = context.blueprint_card or card
+			});
+
+			for i_2, other_c_2 in ipairs(targets) do
+				local percent = 1.15 - (i_2 - 0.999) / (#context.scoring_hand - 0.998) * 0.3
+				G.E_MANAGER:add_event(Event({
+					func = function()
+						if not other_c_2.kcv_ranked_up_discreetly then
+							-- was complete, but another 5-day joker is targeting this card
+							return true
+						end
+						play_sound('card1', percent)
+						other_c_2:flip()
+						return true
+					end
+				}))
+				delay(0.15)
+			end
+			delay(0.3)
+			for i_3, other_c_3 in ipairs(targets) do
+				local percent = 0.85 + (i_3 - 0.999) / (#context.scoring_hand - 0.998) * 0.3
+				G.E_MANAGER:add_event(Event({
+					func = function()
+						if not other_c_3.kcv_ranked_up_discreetly then
+							-- was complete, but another 5-day joker is targeting this card
+							return true
+						end
+						-- kcv_log(other_c_3.base.id .. ' - ' .. other_c_3.kcv_display_rank)
+						other_c_3.kcv_display_rank = SMODS.Ranks[get_next_x_rank(other_c_3.kcv_display_rank.key, 1)]
+
+						-- Copying method SMODs uses
+						local card_suit = SMODS.Suits[other_c_3.base.suit].card_key
+						local card_rank = other_c_3.kcv_display_rank.card_key
+						local newcard = G.P_CARDS[('%s_%s'):format(card_suit, card_rank)]
+						
+						-- set_base again to update sprites that were postponed by kcv_ranked_up_discreetly
+						other_c_3:set_sprites(nil, newcard)
+						play_sound('tarot2', percent, 0.6)
+						other_c_3:flip()
+						if other_c_3.kcv_display_rank.card_key == SMODS.Ranks[other_c_3.base.value].card_key then
+							-- cleanup
+							other_c_3.kcv_ranked_up_discreetly = nil
+							other_c_3.kcv_ignore_debuff_check = nil
+							other_c_3.kcv_display_rank = nil
+						end
+						return true
+					end
+				}))
+				delay(0.15)
+			end
+			delay(0.5)
+		end
+	end
+end
+
+end
 
 --Hook for the game's splash screen, to initialize any data that is sensitive to the mod's order (mainly rank stuff)
 
