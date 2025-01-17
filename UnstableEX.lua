@@ -179,21 +179,32 @@ SMODS.Atlas {
 
 --Remap Additional Rank atlas with the expanded version
 
-local rank_suit_map = {
-            Hearts = 0,
-            Clubs = 1,
-            Diamonds = 2,
-            Spades = 3,
-			
-			bunc_Fleurons = 4,
-			bunc_Halberds = 5,
-			
-			six_Stars = 6,
-			six_Moons = 7,
-			
-			ink_Inks = 8,
-			ink_Colors = 9,
+unstbex_global.rank_suit_map = {
+	Hearts = 1,
+	Clubs = 2,
+	Diamonds = 3,
+	Spades = 4,
+	
+	bunc_Fleurons = 5,
+	bunc_Halberds = 6,
+	
+	six_Stars = 7,
+	six_Moons = 8,
+	
+	ink_Inks = 9,
+	ink_Colors = 10,
+	
+	mtg_Clovers = 11,
+	minty_3s = 12,
 }
+
+--Fill all remaining suits without defined map with 0, so it points to "No Graphic" row
+	
+for k,v in pairs(SMODS.Suits) do
+	if not unstbex_global.rank_suit_map[k] then
+		unstbex_global.rank_suit_map[k] = 0
+	end
+end
 
 --SMODS.Ranks['unstb_0.5'].lc_atlas = 'unstbex_rank_ex'
 --SMODS.Ranks['unstb_0.5'].hc_atlas = 'unstbex_rank_ex_hc'
@@ -222,7 +233,7 @@ local function inject_rank_atlas(prefix)
 			
 			rank.lc_atlas = rank_atlas_map[k]
 			rank.hc_atlas = rank_atlas_map[k]..'_hc'
-			rank.suit_map = rank_suit_map
+			rank.suit_map = unstbex_global.rank_suit_map
 
 			print("Injecting the graphic for rank "..rank.key)
 		end
@@ -247,14 +258,31 @@ register_suit_group("no_smear", "Inks_Color")]]
 
 --Update extended atlas for Slop and Resource Cards
 
+--Separated from rank suit map now
+local enhancement_suit_map = {
+	Hearts = 0,
+	Clubs = 1,
+	Diamonds = 2,
+	Spades = 3,
+	
+	bunc_Fleurons = 4,
+	bunc_Halberds = 5,
+	
+	six_Stars = 6,
+	six_Moons = 7,
+	
+	ink_Inks = 8,
+	ink_Colors = 9,
+}
+
 local center_unstb_slop = SMODS.Centers['m_unstb_slop'] or {}
-center_unstb_slop.suit_map = rank_suit_map
+center_unstb_slop.suit_map = enhancement_suit_map
 center_unstb_slop.atlas = 'unstbex_enh_slop'
 center_unstb_slop.lc_atlas = 'unstbex_enh_slop'
 center_unstb_slop.hc_atlas = 'unstbex_enh_slop_hc'
 
 local center_unstb_resource = SMODS.Centers['m_unstb_resource'] or {}
-center_unstb_resource.suit_map = rank_suit_map
+center_unstb_resource.suit_map = enhancement_suit_map
 center_unstb_resource.atlas = 'unstbex_enh_res'
 
 --Blacklist "top" ranks for many jokers
