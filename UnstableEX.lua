@@ -302,19 +302,37 @@ local bunc_pawn = SMODS.Centers['j_bunc_pawn'] or {}
 
 --Blacklist ranks for Pawn
 
+bunc_pawn.loc_vars = function(self, info_queue, card)
+	if G.playing_cards and #G.playing_cards > 0 then
+		local rank = math.huge
+		local target_rank = 'unstb_???';
+		for _, deck_card in ipairs(G.playing_cards) do
+			local newrank = deck_card.base.nominal + (deck_card.base.face_nominal or 0)
+			if newrank < rank and (not deck_card.config.center.no_rank or deck_card.config.center ~= G.P_CENTERS.m_stone) then
+				rank = newrank
+				target_rank = deck_card.base.value
+			end
+		end
+		return {vars = {localize(target_rank, 'ranks')}}
+	end
+	return {vars = {localize('2', 'ranks')}}
+end
+
 bunc_pawn.calculate = function(self, card, context)
 	if context.after and context.scoring_hand and not context.blueprint then
 		for i = 1, #context.scoring_hand do
 			local condition = false
 			local other_card = context.scoring_hand[i]
 			local rank = math.huge
+			local target_rank = 'unstb_???';
 			for _, deck_card in ipairs(G.playing_cards) do
 				local newrank = deck_card.base.nominal + (deck_card.base.face_nominal or 0)
 				if newrank < rank and (not deck_card.config.center.no_rank or deck_card.config.center ~= G.P_CENTERS.m_stone) then
 					rank = newrank
+					target_rank = deck_card.base.value
 				end
 			end
-			if other_card.base.nominal == rank and not top_rank_blacklist[other_card.base.value] then
+			if other_card.base.value == target_rank and not top_rank_blacklist[other_card.base.value] then
 				condition = true
 				event({trigger = 'after', delay = 0.15, func = function() other_card:flip(); play_sound('card1', 1); other_card:juice_up(0.3, 0.3); return true end })
 				event({
@@ -345,41 +363,20 @@ local zeroshapiro_zerorank = {
 
 bunc_zero_shapiro.calculate = function(self, card, context)
 	if context.individual and context.cardarea == G.play then
-		--print("UnStbEX version")
 		if context.other_card.config.center.no_rank or zeroshapiro_zerorank[context.other_card.base.value] then
-
-			local old_amount = card.ability.extra.amount
-			card.ability.extra.amount = card.ability.extra.amount + card.ability.extra.bonus
-
-			for k, v in pairs(G.GAME.probabilities) do
-				G.GAME.probabilities[k] = G.GAME.probabilities[k] / old_amount * card.ability.extra.amount
+			if pseudorandom('zero_shapiro'..G.SEED) < G.GAME.probabilities.normal / card.ability.extra.odds then
+				return {
+					extra = {message = '+'..localize{type = 'name_text', key = 'tag_d_six', set = 'Tag'}, colour = G.C.GREEN},
+					card = card,
+					func = function()
+						event({func = function()
+							add_tag(Tag('tag_d_six'))
+							return true
+						end})
+					end
+				}
 			end
-
-			return { --TO DO: Adds a proper localization for this
-				extra = {message = '+X'..card.ability.extra.bonus..' '..'Chance', colour = G.C.GREEN},
-				card = card
-			}
 		end
-	end
-
-	if context.end_of_round and not context.other_card then
-		if card.ability.extra.amount ~= 1 then
-			for k, v in pairs(G.GAME.probabilities) do
-				G.GAME.probabilities[k] = v / card.ability.extra.amount
-			end
-
-			card.ability.extra.amount = 1
-
-			forced_message(localize('k_reset'), card, G.C.GREEN, true)
-		end
-	end
-
-	if context.selling_self then
-		for k, v in pairs(G.GAME.probabilities) do
-			G.GAME.probabilities[k] = v / card.ability.extra.amount
-		end
-
-		card.ability.extra.amount = 1
 	end
 end
 
