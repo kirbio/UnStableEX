@@ -161,6 +161,29 @@ SMODS.Atlas {
   py = 95
 }
 
+--Bunco's resprites suit colours
+SMODS.Atlas {
+  key = "rank_ex_hc_b",
+  path = "rank_ex_hc_b.png",
+  px = 71,
+  py = 95
+}
+
+SMODS.Atlas {
+  key = "rank_ex2_hc_b",
+  path = "rank_ex2_hc_b.png",
+  px = 71,
+  py = 95
+}
+
+SMODS.Atlas {
+  key = "enh_slop_hc_b",
+  path = "enh_slop_hc_b.png",
+  px = 71,
+  py = 95
+}
+
+
 --Familiar's Multi-Suit Cards Fallback
 --(I don't think it is possible to make all combinations by myself, especially to account for modded suits)
 SMODS.Atlas {
@@ -226,13 +249,21 @@ local rank_atlas_map = {['unstb_0'] = 'unstbex_rank_ex',
 						['unstb_25'] = 'unstbex_rank_ex2',
 						['unstb_161'] = 'unstbex_rank_ex2',}
 
+--Swap the hc atli with bunco resprites version to match suit colours
+local using_bunco_resprites = false
+if check_mod_active("Bunco") then
+	if BUNCOMOD and BUNCOMOD.content and BUNCOMOD.content.config then
+		using_bunco_resprites = BUNCOMOD.content.config.fixed_sprites
+	end
+end
+
 local function inject_rank_atlas(prefix)
 	for k,v in pairs(SMODS.Ranks) do
 		if k:find(prefix) then
 			local rank = SMODS.Ranks[k]
 			
 			rank.lc_atlas = rank_atlas_map[k]
-			rank.hc_atlas = rank_atlas_map[k]..'_hc'
+			rank.hc_atlas = using_bunco_resprites and rank_atlas_map[k]..'_hc_b' or rank_atlas_map[k]..'_hc'
 			rank.suit_map = unstbex_global.rank_suit_map
 
 			print("Injecting the graphic for rank "..rank.key)
@@ -279,7 +310,7 @@ local center_unstb_slop = SMODS.Centers['m_unstb_slop'] or {}
 center_unstb_slop.suit_map = enhancement_suit_map
 center_unstb_slop.atlas = 'unstbex_enh_slop'
 center_unstb_slop.lc_atlas = 'unstbex_enh_slop'
-center_unstb_slop.hc_atlas = 'unstbex_enh_slop_hc'
+center_unstb_slop.hc_atlas = using_bunco_resprites and 'unstbex_enh_slop_hc_b' or 'unstbex_enh_slop_hc'
 
 local center_unstb_resource = SMODS.Centers['m_unstb_resource'] or {}
 center_unstb_resource.suit_map = enhancement_suit_map
