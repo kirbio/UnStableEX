@@ -802,6 +802,79 @@ end
 --Cryptid Compat
 
 if check_mod_active("Cryptid") then
+
+--Special interaction w/ Plagiarism and rigged
+--[[
+local j_plagiarism = SMODS.Centers['j_unstb_plagiarism']
+
+if j_plagiarism then
+
+local ref_j_plagiarism_calculate = j_plagiarism.calculate
+
+j_plagiarism.calculate = function(self, card, context)
+	--Alternate function entirely if it's rigged
+	if card.ability.cry_rigged then
+		--Code based on Familiar's Crimsonotype
+		
+		--This bit of code runs before hand played, cannot copyable by other blueprint
+		if context.before and not context.blueprint and not context.repetition and not context.repetition_only then
+			forced_message('Both', card, G.C.ORANGE, true)
+		end
+		
+		local other_joker = nil
+		for i = 1, #G.jokers.cards do
+			if G.jokers.cards[i] == card then
+				other_joker = {G.jokers.cards[i - 1], G.jokers.cards[i + 1]}
+			end
+		end
+		
+		if other_joker then
+			for i = 1, #other_joker do
+				if other_joker[i] and other_joker[i] ~= self then 
+					--local newcontext = context
+					context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
+					context.blueprint_card = context.blueprint_card or card
+
+					if context.blueprint > #G.jokers.cards + 1 then
+						return
+					end
+
+					local other_joker_ret, trig = other_joker[i]:calculate_joker(context)
+					
+					--Context needs resetting afterwards, otherwise this value keeps persisting
+					context.blueprint = nil
+					
+					local eff_card = context.blueprint_card or card
+					context.blueprint_card = nil
+					
+					if other_joker_ret or trig then
+						if not other_joker_ret then
+							other_joker_ret = {}
+						end
+						
+						other_joker_ret.card = eff_card
+						other_joker_ret.colour = G.C.GREEN
+						other_joker_ret.no_callback = true
+						
+						if other_joker_ret then 
+							--Jank, might result in message appear at wrong place idk but at least it should be executed properly
+							SMODS.calculate_effect(other_joker_ret, context.individual and context.other_card or eff_card)
+							--return other_joker_ret
+						end
+					end
+				end
+			end
+		end
+		
+	else
+		return ref_j_plagiarism_calculate(self, card, context)
+	end
+	
+end
+
+end]]
+
+
 --Add appropiate Jokers to the pool
 
 --Placeholder, there's no food jokers yet in UNSTB and/or EX
