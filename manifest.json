@@ -1,7 +1,7 @@
 {
     "name": "UnStableEX",
     "id": "UnStableEX",
-    "version": "0.2.2",
+    "version": "0.2.2a",
     "website_url": "https://github.com/kirbio/UnStableEX",
     "description": "Add-on for the UnStable mod to extend the support for other mods",
     "prefix": "unstbex",
