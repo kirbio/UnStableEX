@@ -28,6 +28,7 @@ unstbex_global.compat = {
 	CustomCards = (SMODS.Mods["CustomCards"] or {}).can_load,
 	Pokermon = (SMODS.Mods["Pokermon"] or {}).can_load,
 	KCVanilla = (SMODS.Mods["kcvanilla"] or {}).can_load,
+	DnDJ = (SMODS.Mods["dndj"] or {}).can_load,
 }
 
 local function check_mod_active(mod_id)
@@ -1225,6 +1226,55 @@ end
 
 end
 
+--DnDJ Compat
+if check_mod_active("DnDJ") then
+
+--TO DO: Make it a toggle setting if the card from DnDJ contraband pack would keep its rank graphic or not
+local keep_sprite = false
+
+local dndj_rank_map = {['dndj_0'] = 'unstb_0',
+					['dndj_0.5'] = 'unstb_0.5',
+					['dndj_1'] = 'unstb_1',
+					['dndj_Pi'] = 'unstb_Pi',
+					['dndj_11'] = 'unstb_11',
+					['dndj_12'] = 'unstb_12',
+					['dndj_13'] = 'unstb_13',
+					['dndj_21'] = 'unstb_21'}
+
+--Supported suits from DnDJ, if others, swap the rank to UnStable's entirely
+local dndj_support_suits = {Hearts = true,
+							Clubs = true,
+							Diamonds = true,
+							Spades = true,
+}
+
+local ref_card_set_base = Card.set_base
+function Card:set_base(card, initial)
+    card = card or {}
+	
+	ref_card_set_base(self, card, initial)
+	
+	if self.base and self.base.value and dndj_rank_map[self.base.value] then
+		if keep_sprite and dndj_support_suits[self.base.suit] then
+			--Re-assign the rank to UnStable's equivalent
+			--Doing it this way should keep the sprites unchanged
+			
+			self.base.value = dndj_rank_map[self.base.value]
+			
+			local rank = SMODS.Ranks[self.base.value] or {}
+			self.base.nominal = rank.nominal or 0
+			self.base.face_nominal = rank.face_nominal or 0
+			self.base.id = rank.id
+		else
+			SMODS.change_base(self, nil, dndj_rank_map[self.base.value])
+		end
+		
+		
+	end
+end
+
+end
+
 --Hook for the game's splash screen, to initialize any data that is sensitive to the mod's order (mainly rank stuff)
 
 local ref_gamesplashscreen = Game.splash_screen
@@ -1244,10 +1294,6 @@ function Game:splash_screen()
 		for key, rank in pairs(SMODS.Ranks) do
 			rank_nominal_order[key] = rank.nominal
 		end
-		
-		--Override 
-		
-		local ref_card_set_base = Card.set_base
 		
 		--Basically the same code from the basegame, but swap nominal out with the new rank_nominal_order property
 		function Card:get_nominal(mod)
