@@ -1230,7 +1230,7 @@ end
 if check_mod_active("DnDJ") then
 
 --TO DO: Make it a toggle setting if the card from DnDJ contraband pack would keep its rank graphic or not
-local keep_sprite = false
+local keep_sprite = true
 
 local dndj_rank_map = {['dndj_0'] = 'unstb_0',
 					['dndj_0.5'] = 'unstb_0.5',
