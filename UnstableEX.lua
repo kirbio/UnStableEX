@@ -5,6 +5,11 @@ local path = unstbex.path
 --Global Table
 unstbex_global = {}
 
+unstbex_lib = {}
+
+--Library
+SMODS.load_file("/lib/suit_compat.lua")()
+
 --Localization Messages
 --local loc = filesystem.load(path..'localization.lua')()
 
@@ -29,6 +34,9 @@ unstbex_global.compat = {
 	Pokermon = (SMODS.Mods["Pokermon"] or {}).can_load,
 	KCVanilla = (SMODS.Mods["kcvanilla"] or {}).can_load,
 	DnDJ = (SMODS.Mods["dndj"] or {}).can_load,
+	MtJ = (SMODS.Mods["magic_the_jokering"] or {}).can_load,
+	Minty = (SMODS.Mods["MintysSillyMod"] or {}).can_load,
+	Cardsauce = (SMODS.Mods["Cardsauce"] or {}).can_load,
 }
 
 local function check_mod_active(mod_id)
@@ -133,31 +141,18 @@ SMODS.Atlas {
   py = 95
 }
 
---Atlas for extra ranks
+--Fallback atlas for extra ranks
+
 SMODS.Atlas {
-  key = "rank_ex",
-  path = "rank_ex.png",
+  key = "rank_ex_default",
+  path = "rank_ex/default/rank_ex.png",
   px = 71,
   py = 95
 }
 
 SMODS.Atlas {
-  key = "rank_ex_hc",
-  path = "rank_ex_hc.png",
-  px = 71,
-  py = 95
-}
-
-SMODS.Atlas {
-  key = "rank_ex2",
-  path = "rank_ex2.png",
-  px = 71,
-  py = 95
-}
-
-SMODS.Atlas {
-  key = "rank_ex2_hc",
-  path = "rank_ex2_hc.png",
+  key = "rank_ex2_default",
+  path = "rank_ex/default/rank_ex2.png",
   px = 71,
   py = 95
 }
@@ -165,14 +160,14 @@ SMODS.Atlas {
 --Bunco's resprites suit colours
 SMODS.Atlas {
   key = "rank_ex_hc_b",
-  path = "rank_ex_hc_b.png",
+  path = "rank_ex/bunco/rank_ex_hc_b.png",
   px = 71,
   py = 95
 }
 
 SMODS.Atlas {
   key = "rank_ex2_hc_b",
-  path = "rank_ex2_hc_b.png",
+  path = "rank_ex/bunco/rank_ex2_hc_b.png",
   px = 71,
   py = 95
 }
@@ -184,6 +179,29 @@ SMODS.Atlas {
   py = 95
 }
 
+--Cardsauce Skin
+
+local use_cardsauce_skin = false
+
+if check_mod_active("Cardsauce") then
+
+use_cardsauce_skin = csau_enabled['enableSkins']
+
+SMODS.Atlas {
+  key = "rank_ex_cs",
+  path = "rank_ex/cardsauce/rank_ex_cs.png",
+  px = 71,
+  py = 95
+}
+
+SMODS.Atlas {
+  key = "rank_ex2_cs",
+  path = "rank_ex/cardsauce/rank_ex2_cs.png",
+  px = 71,
+  py = 95
+}
+
+end
 
 --Familiar's Multi-Suit Cards Fallback
 --(I don't think it is possible to make all combinations by myself, especially to account for modded suits)
@@ -201,54 +219,23 @@ SMODS.Atlas {
   py = 95
 }
 
---Remap Additional Rank atlas with the expanded version
-
-unstbex_global.rank_suit_map = {
-	Hearts = 1,
-	Clubs = 2,
-	Diamonds = 3,
-	Spades = 4,
-	
-	bunc_Fleurons = 5,
-	bunc_Halberds = 6,
-	
-	six_Stars = 7,
-	six_Moons = 8,
-	
-	ink_Inks = 9,
-	ink_Colors = 10,
-	
-	mtg_Clovers = 11,
-	minty_3s = 12,
-}
-
---Fill all remaining suits without defined map with 0, so it points to "No Graphic" row
-	
-for k,v in pairs(SMODS.Suits) do
-	if not unstbex_global.rank_suit_map[k] then
-		unstbex_global.rank_suit_map[k] = 0
-	end
-end
-
---SMODS.Ranks['unstb_0.5'].lc_atlas = 'unstbex_rank_ex'
---SMODS.Ranks['unstb_0.5'].hc_atlas = 'unstbex_rank_ex_hc'
---SMODS.Ranks['unstb_0.5'].suit_map = rank_suit_map
-
 --Map new atlas to the rank - new ranks now used more than 1 atlas (split off for maintenance reason)
-local rank_atlas_map = {['unstb_0'] = 'unstbex_rank_ex',
-						['unstb_0.5'] = 'unstbex_rank_ex',
-						['unstb_1'] = 'unstbex_rank_ex',
-						['unstb_r2'] = 'unstbex_rank_ex',
-						['unstb_e'] = 'unstbex_rank_ex',
-						['unstb_Pi'] = 'unstbex_rank_ex',
-						['unstb_21'] = 'unstbex_rank_ex',
-						['unstb_???'] = 'unstbex_rank_ex',
+local rank_atlas_map = {['unstb_0'] = 1,
+						['unstb_0.5'] = 1,
+						['unstb_1'] = 1,
+						['unstb_r2'] = 1,
+						['unstb_e'] = 1,
+						['unstb_Pi'] = 1,
+						['unstb_21'] = 1,
+						['unstb_???'] = 1,
 						
-						['unstb_11'] = 'unstbex_rank_ex2',
-						['unstb_12'] = 'unstbex_rank_ex2',
-						['unstb_13'] = 'unstbex_rank_ex2',
-						['unstb_25'] = 'unstbex_rank_ex2',
-						['unstb_161'] = 'unstbex_rank_ex2',}
+						['unstb_11'] = 2,
+						['unstb_12'] = 2,
+						['unstb_13'] = 2,
+						['unstb_25'] = 2,
+						['unstb_161'] = 2,}
+						
+local rank_atlas_name = {'unstbex_rank_ex', 'unstbex_rank_ex2'}
 
 --Swap the hc atli with bunco resprites version to match suit colours
 local using_bunco_resprites = false
@@ -258,14 +245,89 @@ if check_mod_active("Bunco") then
 	end
 end
 
+local vanilla_suits = {Hearts = true,
+							Clubs = true,
+							Diamonds = true,
+							Spades = true,
+}
+
+unstbex_lib.extra_suits = {}
+
+--Init extra suits information based on loaded mod
+
+if check_mod_active("Bunco") then
+	unstbex_lib.init_suit_compat('bunc_Fleurons', 'bunco')
+	unstbex_lib.init_suit_compat('bunc_Halberds', 'bunco')
+end
+
+if check_mod_active("Six_Suit") then
+	unstbex_lib.init_suit_compat('six_Stars', 'sixsuits', true)
+	unstbex_lib.init_suit_compat('six_Moons', 'sixsuits', true)
+end
+
+if check_mod_active("Inks_Color") then
+	unstbex_lib.init_suit_compat('ink_Inks', 'inkscolor', true)
+	unstbex_lib.init_suit_compat('ink_Colors', 'inkscolor', true)
+end
+
+if check_mod_active("MtJ") then
+	unstbex_lib.init_suit_compat('mtg_Clovers', 'mtj')
+end
+
+if check_mod_active("Minty") then
+	unstbex_lib.init_suit_compat('minty_3s', 'minty', true)
+end
+
+--Suit injection code based on Showdown by Mistyk__
+local function inject_p_card_suit_compat(suit, rank)
+	local card = {
+		name = rank.key .. ' of ' .. suit.key,
+		value = rank.key,
+		suit = suit.key,
+		pos = { x = rank.pos.x, y = rank.suit_map[suit.key] or suit.pos.y },
+		lc_atlas = rank.suit_map[suit.key] and rank.lc_atlas or suit.lc_atlas,
+		hc_atlas = rank.suit_map[suit.key] and rank.hc_atlas or suit.hc_atlas,
+	}
+	if not vanilla_suits[card.suit] then
+		if not unstbex_lib.extra_suits[card.suit] then
+			print("Warning: Unknown suit for "..card.name)
+			card.lc_atlas = rank_atlas_name[rank_atlas_map[rank.key]]..'_default'
+			card.hc_atlas = rank_atlas_name[rank_atlas_map[rank.key]]..'_default'
+			card.pos.y = 0
+		else
+			card.lc_atlas = unstbex_lib.extra_suits[card.suit].lc_atlas[rank_atlas_map[rank.key]]
+			card.hc_atlas = unstbex_lib.extra_suits[card.suit].hc_atlas[rank_atlas_map[rank.key]]
+		end
+	end
+	G.P_CARDS[suit.card_key .. '_' .. rank.card_key] = card
+end
+
+local function rank_injection(self)
+	print("Performing extra rank injection")
+	for _, suit in pairs(SMODS.Suits) do
+		inject_p_card_suit_compat(suit, self)
+	end
+end
+
 local function inject_rank_atlas(prefix)
 	for k,v in pairs(SMODS.Ranks) do
 		if k:find(prefix) then
 			local rank = SMODS.Ranks[k]
 			
-			rank.lc_atlas = rank_atlas_map[k]
+			rank.inject = rank_injection
+			
+			if use_cardsauce_skin then
+				rank.lc_atlas = rank_atlas_name[rank_atlas_map[k]]..'_cs'
+				rank.hc_atlas = rank_atlas_name[rank_atlas_map[k]]..'_cs'
+			end
+			
+			if using_bunco_resprites then
+				rank.hc_atlas = rank_atlas_name[rank_atlas_map[k]]..'_hc_b'
+			end
+			
+			--[[rank.lc_atlas = rank_atlas_map[k]
 			rank.hc_atlas = using_bunco_resprites and rank_atlas_map[k]..'_hc_b' or rank_atlas_map[k]..'_hc'
-			rank.suit_map = unstbex_global.rank_suit_map
+			rank.suit_map = unstbex_global.rank_suit_map]]
 
 			print("Injecting the graphic for rank "..rank.key)
 		end
