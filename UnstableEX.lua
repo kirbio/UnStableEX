@@ -37,6 +37,7 @@ unstbex_global.compat = {
 	MtJ = (SMODS.Mods["magic_the_jokering"] or {}).can_load,
 	Minty = (SMODS.Mods["MintysSillyMod"] or {}).can_load,
 	Cardsauce = (SMODS.Mods["Cardsauce"] or {}).can_load,
+	Showdown = (SMODS.Mods["showdown"] or {}).can_load,
 }
 
 local function check_mod_active(mod_id)
@@ -1333,6 +1334,140 @@ function Card:set_base(card, initial)
 		
 		
 	end
+end
+
+end
+
+--Showdown compat
+if check_mod_active("Showdown") then
+
+local enable_unstable_decimal = true
+local replace_zero = false
+
+--Adds "decimal" compat to all counterpart ranks
+local rank_sh_two_half = SMODS.Ranks['showdown_2.5']
+rank_sh_two_half.decimal_compat = true
+
+local rank_sh_five_half = SMODS.Ranks['showdown_5.5']
+rank_sh_five_half.decimal_compat = true
+
+local rank_sh_eight_half = SMODS.Ranks['showdown_8.5']
+rank_sh_eight_half.decimal_compat = true
+
+local rank_sh_butler = SMODS.Ranks['showdown_Butler']
+rank_sh_butler.decimal_compat = true
+
+local rank_sh_princess = SMODS.Ranks['showdown_Princess']
+rank_sh_princess.decimal_compat = true
+
+local rank_sh_lord = SMODS.Ranks['showdown_Lord']
+rank_sh_lord.decimal_compat = true
+
+--If the setting is enabled, add proper UnStable decimal rank mechanics onto the ranks
+if enable_unstable_decimal then
+
+--Erase
+--[[function get_counterpart(rank, onlyCounterpart)
+	return nil
+end]]
+
+local max_rank_id_number = -1
+
+for _, v in pairs(SMODS.Ranks) do
+	if v.id > 0 and v.id > max_rank_id_number then
+		max_rank_id_number = v.id
+	end
+end
+
+rank_sh_two_half.is_decimal = true
+rank_sh_two_half.rank_act = {'2', '2.5', '3'}
+rank_sh_two_half.next = { 'unstb_e', '3', 'unstb_Pi', '4' }
+rank_sh_two_half.prev = { '2' }
+rank_sh_two_half.strength_effect = {
+            fixed = 2,
+            random = false,
+            ignore = false
+        }
+rank_sh_two_half.id = max_rank_id_number + 1
+		
+rank_sh_five_half.is_decimal = true
+rank_sh_five_half.rank_act = {'5', '5.5', '6'}
+rank_sh_five_half.next = { '6', '7'}
+rank_sh_five_half.prev = { '5' }
+rank_sh_five_half.id = max_rank_id_number + 2
+
+rank_sh_eight_half.is_decimal = true
+rank_sh_eight_half.rank_act = {'8', '8.5', '9'}
+rank_sh_eight_half.next = { '9', '10'}
+rank_sh_eight_half.prev = { '8' }
+rank_sh_eight_half.id = max_rank_id_number + 3
+
+rank_sh_butler.is_decimal = true
+rank_sh_butler.rank_act = {'Jack', 'Butler', 'Queen'}
+rank_sh_butler.next = {'Queen', 'showdown_Princess', 'King'}
+rank_sh_butler.prev = { 'Jack' }
+rank_sh_butler.id = max_rank_id_number + 4
+
+rank_sh_princess.is_decimal = true
+rank_sh_princess.rank_act = {'Queen', 'Princess', 'King'}
+rank_sh_princess.next = {'King', 'showdown_Lord', 'Ace'}
+rank_sh_princess.prev = { 'Queen' }
+rank_sh_princess.id = max_rank_id_number + 5
+
+rank_sh_lord.is_decimal = true
+rank_sh_lord.rank_act = {'King', 'Lord'}
+rank_sh_lord.next = {'Ace'}
+rank_sh_lord.prev = { 'King' }
+rank_sh_lord.id = max_rank_id_number + 6
+
+--Changes to existing ranks to allow Straight in numerical order
+SMODS.Ranks['2'].strength_effect = {
+            fixed = 3,
+            random = false,
+            ignore = false
+        }
+SMODS.Ranks['2'].next = {'showdown_2.5', 'unstb_e', '3', 'unstb_Pi'}
+
+SMODS.Ranks['5'].strength_effect = {
+            fixed = 2,
+            random = false,
+            ignore = false
+        }
+SMODS.Ranks['5'].next = {'showdown_5.5', '6'}
+
+SMODS.Ranks['8'].strength_effect = {
+            fixed = 2,
+            random = false,
+            ignore = false
+        }
+SMODS.Ranks['8'].next = {'showdown_8.5', '9'}
+
+SMODS.Ranks['10'].next = {'Jack', 'showdown_Butler', 'unstb_11'}
+
+SMODS.Ranks['Jack'].strength_effect = {
+            fixed = 2,
+            random = false,
+            ignore = false
+        }
+SMODS.Ranks['Jack'].next = {'showdown_Butler', 'Queen', 'showdown_Princess'}
+
+SMODS.Ranks['Queen'].strength_effect = {
+            fixed = 2,
+            random = false,
+            ignore = false
+        }
+SMODS.Ranks['Queen'].next = {'showdown_Princess', 'King', 'showdown_Lord'}
+
+SMODS.Ranks['King'].strength_effect = {
+            fixed = 2,
+            random = false,
+            ignore = false
+        }
+SMODS.Ranks['King'].next = {'showdown_Lord', 'Ace'}
+
+--Revert the Showdown next straight
+--TODO
+
 end
 
 end
