@@ -1,9 +1,11 @@
 local unstbex = SMODS.current_mod
 local filesystem = NFS or love.filesystem
 local path = unstbex.path
+local unstbex_config = unstbex.config
 
 --Global Table
 unstbex_global = {}
+unstbex_global.config = unstbex.config
 
 unstbex_lib = {}
 
@@ -43,6 +45,135 @@ unstbex_global.compat = {
 local function check_mod_active(mod_id)
 	return unstbex_global.compat[mod_id]
 end
+
+--Config Stuff
+
+function unstbex.save_config(self)
+    SMODS.save_mod_config(self)
+end
+
+local unstbex_config_tab = function()
+	--Dynamically Building Config Based on loaded mods
+	--I'll figure out how to make paginations later
+	
+	local mod_config_ui_tables = {}
+	local function create_mod_config(mod_name, conf_list)
+		if not check_mod_active(mod_name.key) then return end
+
+		local ui_nodes = {}
+		ui_nodes[1] = {n=G.UIT.R, config={align = "cm"}, nodes={{n = G.UIT.T, config = {text = mod_name.name or mod_name.key, colour = G.C.ORANGE, scale = 0.5}}}}
+		
+		for k,v in pairs(conf_list) do
+			ui_nodes[#ui_nodes+1] = create_toggle({label = v.label, ref_table = unstbex.config[v.ref_table], ref_value = k, callback = function() unstbex:save_config() end})
+		end
+		
+		mod_config_ui_tables[#mod_config_ui_tables+1] = {n=G.UIT.R, config={align = "cl"}, nodes = ui_nodes }
+	end
+
+
+	local function mod_config_ui_init()
+		
+		--List of ALL possible mod config
+		
+		create_mod_config({key=  "DnDJ", name = "DnDJ"}, {
+		keep_sprite = {label = "Keep Rank Sprites", ref_table = "dndj"},
+		})
+		
+		create_mod_config({key=  "Showdown", name = "Showdown"}, {
+		use_decimal = {label = "Use Decimal Mechanics", ref_table = "showdown"},
+		replace_zero = {label = "Replace Rank 0", ref_table = "showdown"},
+		})
+	end
+
+	mod_config_ui_init();
+
+	--Rendering
+	local render_table = {}
+	local restart_header = nil
+	
+	if #mod_config_ui_tables > 0 then
+		for i=1, #mod_config_ui_tables do
+			render_table[#render_table+1] = mod_config_ui_tables[i]
+		end
+		
+		restart_header = {n=G.UIT.R, config={align = "cm"}, nodes={{n = G.UIT.T, config = {text = localize("unstb_config_requires_restart"), colour = G.C.RED, scale = 0.4}}}}
+	else
+		render_table = {{n=G.UIT.R, config={align = "cl"}, nodes={
+						
+						{n=G.UIT.R, config={align = "cm"}, nodes={{n = G.UIT.T, config = {text = "No configurable options found for the current modlist", scale = 0.5}}}},
+						}}}
+	end
+	
+	
+	return{
+		{
+		label = "Config",
+		chosen = true,
+		tab_definition_function = function()
+		return {
+			n = G.UIT.ROOT,
+				config = {
+					emboss = 0.05,
+					minh = 6,
+					r = 0.1,
+					minw = 10,
+					align = "cm",
+					padding = 0.2,
+					colour = G.C.BLACK,
+				},
+				nodes = {
+				
+					{n=G.UIT.R, config={align = "cm"}, nodes= {restart_header} },
+				
+					{n=G.UIT.R, config={align = "cm"}, nodes={ --Base Box containing everything
+		
+					-- Left Side Column
+					{n=G.UIT.C, config={align = "cl", padding = 0.2}, nodes = render_table }, 
+					
+					-- Right Side Column
+					--{n=G.UIT.C, config={align = "cl"}, nodes = render_table}, 
+				
+				}}
+				},
+		}
+		end
+		},
+		
+		--[[{ --Reserved Tab, in case the settings are expended in the future
+		label = localize("unstb_config_header_joker_settings"),
+		tab_definition_function = function()
+		return {
+			n = G.UIT.ROOT,
+				config = {
+					emboss = 0.05,
+					minh = 6,
+					r = 0.1,
+					minw = 10,
+					align = "cm",
+					padding = 0.2,
+					colour = G.C.BLACK,
+				},
+				nodes = {
+				
+				},
+			
+		
+		}
+		end
+		}]]
+	}
+end
+
+unstbex.extra_tabs = unstbex_config_tab
+
+--Just so the gear icon shows up
+unstbex.config_tab = true
+
+--Map config value with a single string keyword
+local config_value = {
+    --["rank_21"] = unstb_config.rank.rank_21,
+    
+}
 
 --Utility
 
@@ -395,27 +526,30 @@ function Card:set_base(card, initial)
 	
 	ref_card_set_base(self, card, initial)
 	
-	if self.base and self.base.value and replace_rank_map[self.base.value] then
-	
-		local replace_rank_data = replace_rank_map[self.base.value]
-	
-		if replace_rank_data.keep_sprite and vanilla_suits[self.base.suit] then
-			--Re-assign the rank to UnStable's equivalent
-			--Doing it this way should keep the sprites unchanged
+	--Only run this piece of codes when inside the run (so, menu animations aren't interrupted)
+	if G.GAME and G.GAME.blind then
+		if self.base and self.base.value and replace_rank_map[self.base.value] then
+		
+			local replace_rank_data = replace_rank_map[self.base.value]
+		
+			if replace_rank_data.keep_sprite and vanilla_suits[self.base.suit] then
+				--Re-assign the rank to UnStable's equivalent
+				--Doing it this way should keep the sprites unchanged
+				
+				--Automatically replaced it completely if the suit isn't vanilla for stable reasons
+				
+				self.base.value = replace_rank_data.new_rank
+				
+				local rank = SMODS.Ranks[self.base.value] or {}
+				self.base.nominal = rank.nominal or 0
+				self.base.face_nominal = rank.face_nominal or 0
+				self.base.id = rank.id
+			else
+				SMODS.change_base(self, nil, replace_rank_map[self.base.value].new_rank)
+			end
 			
-			--Automatically replaced it completely if the suit isn't vanilla for stable reasons
 			
-			self.base.value = replace_rank_data.new_rank
-			
-			local rank = SMODS.Ranks[self.base.value] or {}
-			self.base.nominal = rank.nominal or 0
-			self.base.face_nominal = rank.face_nominal or 0
-			self.base.id = rank.id
-		else
-			SMODS.change_base(self, nil, replace_rank_map[self.base.value].new_rank)
 		end
-		
-		
 	end
 end
 
@@ -494,6 +628,11 @@ local zeroshapiro_zerorank = {
 	['Jack'] = true,
 	['Queen'] = true,
 	['King'] = true,
+	
+	['showdown_Butler'] = true,
+	['showdown_Princess'] = true,
+	['showdown_Lord'] = true,
+	['showdown_Zero'] = true,
 }
 
 bunc_zero_shapiro.calculate = function(self, card, context)
@@ -525,6 +664,11 @@ local crop_circles_rank_mult = {
 	['9'] = 1,
 	['10'] = 1,
 	['Queen'] = 1,
+	
+	['showdown_8.5'] = 2,
+	['showdown_Butler'] = 2,
+	['showdown_Princess'] = 1,
+	['showdown_Zero'] = 1,
 }
 
 --Implemented differently than in Bunco, but should yield the same result
@@ -539,6 +683,8 @@ bunc_crop_circles.calculate = function(self, card, context)
 				total_mult = total_mult + 4
 			elseif other_card.base.suit == 'Clubs' then
 				total_mult = total_mult + 3
+			elseif other_card.base.suit == 'mtg_Clovers' then
+				total_mult = total_mult + 4
 			end			
 		end
 		
@@ -651,12 +797,22 @@ local rankMap = { 	['unstb_0.5'] = {UP = 'unstb_1', MID = 'unstb_0.5' , DOWN = '
 					
 					unstb_11 = {UP = 'unstb_12', MID = 'unstb_11' , DOWN = '10'},
 					unstb_12 = {UP = 'unstb_13', MID = 'unstb_12' , DOWN = 'unstb_11'},
-					unstb_13 = {UP = 'unstb_13', MID = 'unstb_13' , DOWN = 'unstb_12'},
+					unstb_13 = {UP = 'Ace', MID = 'unstb_13' , DOWN = 'unstb_12'},
 					
 					unstb_25 = {UP = 'unstb_25', MID = 'unstb_25' , DOWN = 'unstb_25'},
 					unstb_161 = {UP = 'unstb_161', MID = 'unstb_161' , DOWN = 'unstb_161'},
 					
 					['unstb_???'] = {UP = 'unstb_???', MID = 'unstb_???' , DOWN = 'unstb_???'},
+					
+					['showdown_2.5'] = {UP = '3', MID = 'showdown_2.5' , DOWN = '2'},
+					['showdown_5.5'] = {UP = '6', MID = 'showdown_5.5' , DOWN = '5'},
+					['showdown_8.5'] = {UP = '9', MID = 'showdown_8.5' , DOWN = '8'},
+					
+					['showdown_Butler'] = {UP = 'Queen', MID = 'showdown_Butler' , DOWN = 'Jack'},
+					['showdown_Princess'] = {UP = 'King', MID = 'showdown_Princess' , DOWN = 'Queen'},
+					['showdown_Lord'] = {UP = 'Ace', MID = 'showdown_Lord' , DOWN = 'King'},
+					
+					['showdown_Zero'] = {UP = 'unstb_1', MID = 'showdown_Zero' , DOWN = 'Ace'},
 }
 
 for i=1, #main_rankList do
@@ -1333,7 +1489,7 @@ end
 if check_mod_active("DnDJ") then
 
 --TO DO: Make it a toggle setting if the card from DnDJ contraband pack would keep its rank graphic or not
-local dndj_keep_sprite = true
+local dndj_keep_sprite = unstbex.config.dndj.keep_sprite
 
 local dndj_rank_map = {['dndj_0'] = 'unstb_0',
 					['dndj_0.5'] = 'unstb_0.5',
@@ -1353,8 +1509,8 @@ end
 --Showdown compat
 if check_mod_active("Showdown") then
 
-local enable_unstable_decimal = false
-local replace_zero = false
+local enable_unstable_decimal = unstbex.config.showdown.use_decimal
+local replace_zero = unstbex.config.showdown.replace_zero
 
 if replace_zero then
 	register_rank_replacement('showdown_Zero', 'unstb_0')
