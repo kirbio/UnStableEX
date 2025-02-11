@@ -380,6 +380,46 @@ local center_unstb_resource = SMODS.Centers['m_unstb_resource'] or {}
 center_unstb_resource.suit_map = enhancement_suit_map
 center_unstb_resource.atlas = 'unstbex_enh_res'
 
+--Generic Rank Replacement Utility
+
+--A map of orignal mod's rank, to new rank, and the mod's tag to check if the config is enabled or not
+local replace_rank_map = {}
+
+function register_rank_replacement(originalrank, newrank, keepsprite)
+	replace_rank_map[originalrank] = {new_rank = newrank, keep_sprite = keepsprite}
+end
+
+local ref_card_set_base = Card.set_base
+function Card:set_base(card, initial)
+    card = card or {}
+	
+	ref_card_set_base(self, card, initial)
+	
+	if self.base and self.base.value and replace_rank_map[self.base.value] then
+	
+		local replace_rank_data = replace_rank_map[self.base.value]
+	
+		if replace_rank_data.keep_sprite and vanilla_suits[self.base.suit] then
+			--Re-assign the rank to UnStable's equivalent
+			--Doing it this way should keep the sprites unchanged
+			
+			--Automatically replaced it completely if the suit isn't vanilla for stable reasons
+			
+			self.base.value = replace_rank_data.new_rank
+			
+			local rank = SMODS.Ranks[self.base.value] or {}
+			self.base.nominal = rank.nominal or 0
+			self.base.face_nominal = rank.face_nominal or 0
+			self.base.id = rank.id
+		else
+			SMODS.change_base(self, nil, replace_rank_map[self.base.value].new_rank)
+		end
+		
+		
+	end
+end
+
+
 --Blacklist "top" ranks for many jokers
 local top_rank_blacklist = {
 	['Ace'] = true,
@@ -1293,7 +1333,7 @@ end
 if check_mod_active("DnDJ") then
 
 --TO DO: Make it a toggle setting if the card from DnDJ contraband pack would keep its rank graphic or not
-local keep_sprite = true
+local dndj_keep_sprite = true
 
 local dndj_rank_map = {['dndj_0'] = 'unstb_0',
 					['dndj_0.5'] = 'unstb_0.5',
@@ -1304,36 +1344,8 @@ local dndj_rank_map = {['dndj_0'] = 'unstb_0',
 					['dndj_13'] = 'unstb_13',
 					['dndj_21'] = 'unstb_21'}
 
---Supported suits from DnDJ, if others, swap the rank to UnStable's entirely
-local dndj_support_suits = {Hearts = true,
-							Clubs = true,
-							Diamonds = true,
-							Spades = true,
-}
-
-local ref_card_set_base = Card.set_base
-function Card:set_base(card, initial)
-    card = card or {}
-	
-	ref_card_set_base(self, card, initial)
-	
-	if self.base and self.base.value and dndj_rank_map[self.base.value] then
-		if keep_sprite and dndj_support_suits[self.base.suit] then
-			--Re-assign the rank to UnStable's equivalent
-			--Doing it this way should keep the sprites unchanged
-			
-			self.base.value = dndj_rank_map[self.base.value]
-			
-			local rank = SMODS.Ranks[self.base.value] or {}
-			self.base.nominal = rank.nominal or 0
-			self.base.face_nominal = rank.face_nominal or 0
-			self.base.id = rank.id
-		else
-			SMODS.change_base(self, nil, dndj_rank_map[self.base.value])
-		end
-		
-		
-	end
+for k, v in pairs(dndj_rank_map) do
+	register_rank_replacement(k, v, dndj_keep_sprite)
 end
 
 end
@@ -1341,8 +1353,12 @@ end
 --Showdown compat
 if check_mod_active("Showdown") then
 
-local enable_unstable_decimal = true
+local enable_unstable_decimal = false
 local replace_zero = false
+
+if replace_zero then
+	register_rank_replacement('showdown_Zero', 'unstb_0')
+end
 
 --Adds "decimal" compat to all counterpart ranks
 local rank_sh_two_half = SMODS.Ranks['showdown_2.5']
@@ -1363,13 +1379,28 @@ rank_sh_princess.decimal_compat = true
 local rank_sh_lord = SMODS.Ranks['showdown_Lord']
 rank_sh_lord.decimal_compat = true
 
+--Additional information so UnStable's Engineer can work with them
+unstb_global.register_decimal_rank_map('showdown_2.5', '3')
+unstb_global.register_decimal_rank_map('showdown_5.5', '6')
+unstb_global.register_decimal_rank_map('showdown_8.5', '9')
+unstb_global.register_decimal_rank_map('showdown_Butler', 'Queen')
+unstb_global.register_decimal_rank_map('showdown_Princess', 'King')
+unstb_global.register_decimal_rank_map('showdown_Lord', 'Ace')
+
 --If the setting is enabled, add proper UnStable decimal rank mechanics onto the ranks
 if enable_unstable_decimal then
 
---Erase
---[[function get_counterpart(rank, onlyCounterpart)
-	return nil
-end]]
+--Hook into get_counterpart to erase the UI display for them
+local ref_getCounterPart = get_counterpart
+function get_counterpart(rank, onlyCounterpart)
+
+	--onlyCounterpart is used for UI
+	if onlyCounterpart then
+		return nil
+	end
+
+	return ref_getCounterPart(rank, onlyCounterpart)
+end
 
 local max_rank_id_number = -1
 
@@ -1420,6 +1451,9 @@ rank_sh_lord.next = {'Ace'}
 rank_sh_lord.prev = { 'King' }
 rank_sh_lord.id = max_rank_id_number + 6
 
+--Jank, mostly bc Showdown's rank id is forced to be negative for the counterparts, thus ended up mess with the total rank ID orders
+SMODS.Rank.max_id.value = rank_sh_lord.id
+
 --Changes to existing ranks to allow Straight in numerical order
 SMODS.Ranks['2'].strength_effect = {
             fixed = 3,
@@ -1464,9 +1498,6 @@ SMODS.Ranks['King'].strength_effect = {
             ignore = false
         }
 SMODS.Ranks['King'].next = {'showdown_Lord', 'Ace'}
-
---Revert the Showdown next straight
---TODO
 
 end
 
