@@ -3,6 +3,9 @@
 --lc_only: if true, high contrast atlas is set to be the same as lc atlas
 function unstbex_lib.init_suit_compat(suit, mod_suffix, lc_only)
 
+--Only create atlas if the atlas for this mod has not been created before
+if not SMODS.Atlases['unstbex_rank_ex_'..mod_suffix] then
+
 SMODS.Atlas {
   key = "rank_ex_"..mod_suffix,
   path = "rank_ex/"..mod_suffix.."/rank_ex.png",
@@ -31,6 +34,8 @@ if not lc_only then
 	  px = 71,
 	  py = 95
 	}
+end
+
 end
 
 unstbex_lib.extra_suits[suit] = {modname = mod_suffix,

@@ -1766,6 +1766,8 @@ function Game:splash_screen()
 						or card.base.value == "unstb_0"
 						or card.base.value == "unstb_12"
 						or card.base.value == "unstb_???"
+						
+						or card.base.value == "showdown_Zero"
 					)
 				then
 					return true
