@@ -40,6 +40,7 @@ unstbex_global.compat = {
 	Minty = (SMODS.Mods["MintysSillyMod"] or {}).can_load,
 	Cardsauce = (SMODS.Mods["Cardsauce"] or {}).can_load,
 	Showdown = (SMODS.Mods["showdown"] or {}).can_load,
+	Paperback = (SMODS.Mods["paperback"] or {}).can_load,
 }
 
 local function check_mod_active(mod_id)
@@ -408,6 +409,11 @@ end
 
 if check_mod_active("Minty") then
 	unstbex_lib.init_suit_compat('minty_3s', 'minty', true)
+end
+
+if check_mod_active("Paperback") then
+	unstbex_lib.init_suit_compat('paperback_Stars', 'paperback')
+	unstbex_lib.init_suit_compat('paperback_Crowns', 'paperback')
 end
 
 --Suit injection code based on Showdown by Mistyk__
