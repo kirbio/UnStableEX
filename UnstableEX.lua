@@ -671,9 +671,11 @@ local crop_circles_rank_mult = {
 	['10'] = 1,
 	['Queen'] = 1,
 	
+	['unstb_161'] = 1,
+	
 	['showdown_8.5'] = 2,
-	['showdown_Butler'] = 2,
-	['showdown_Princess'] = 1,
+	--['showdown_Butler'] = 2,
+	--['showdown_Princess'] = 1,
 	['showdown_Zero'] = 1,
 }
 
@@ -761,7 +763,7 @@ function set_sprite_suits(card, juice)
 			--Unfortunately, I don't think I can write them all because there's a lot of combination + lots of graphic to make
 			--Hopefully there is a more elegant solution found in the future.
 		
-			card.children.front.atlas = G.ASSET_ATLAS[rank_atlas_map[card.base.value]..'_multi']
+			card.children.front.atlas = G.ASSET_ATLAS[rank_atlas_name[rank_atlas_map[card.base.value]]..'_multi']
 			card.children.front:set_sprite_pos({x = unstb_ranks_pos[card.base.value], y = 0})
 		end
 		
@@ -1143,6 +1145,18 @@ end]]
 
 --Add appropiate Jokers to the pool
 
+local function inject_cryptid_pool(joker_key, pool_list)
+	local joker = SMODS.Centers[joker_key]
+	
+	if not joker then return end
+	
+	joker.pools = joker.pools or {}
+	
+	for i=1, #pool_list do
+		joker.pools[pool_list[i]] = true
+	end
+end
+
 --Placeholder, there's no food jokers yet in UNSTB and/or EX
 --[[
 if Cryptid.food then
@@ -1167,7 +1181,8 @@ if Cryptid.memepack then
 	}
 	
 	for i = 1, #meme_jokers do
-	  Cryptid.memepack[#Cryptid.memepack+1] = meme_jokers[i]
+	  --Cryptid.memepack[#Cryptid.memepack+1] = meme_jokers[i]
+	  inject_cryptid_pool(meme_jokers[i], {"Meme"});
 	end
 end
 
@@ -1514,6 +1529,8 @@ end
 
 --Showdown compat
 if check_mod_active("Showdown") then
+
+unstb_global.register_face_rank({'showdown_Butler', 'showdown_Princess', 'showdown_Lord'})
 
 local enable_unstable_decimal = unstbex.config.showdown.use_decimal
 local replace_zero = unstbex.config.showdown.replace_zero
