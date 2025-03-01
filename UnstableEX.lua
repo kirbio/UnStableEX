@@ -447,6 +447,10 @@ local function rank_injection(self)
 	end
 end
 
+--Injected Rank List, will loop over all possible ranks
+--table: key = rank_key, pos_x = rank's x position
+local inject_rank_list = {}
+
 local function inject_rank_atlas(prefix)
 	for k,v in pairs(SMODS.Ranks) do
 		if k:find(prefix) then
@@ -454,14 +458,16 @@ local function inject_rank_atlas(prefix)
 			
 			rank.inject = rank_injection
 			
-			if use_cardsauce_skin then
-				rank.lc_atlas = rank_atlas_name[rank_atlas_map[k]]..'_cs'
-				rank.hc_atlas = rank_atlas_name[rank_atlas_map[k]]..'_cs'
+			--[[if use_cardsauce_skin then
+				rank.lc_atlas = rank_atlas_name[rank_atlas_map[k] ]..'_cs'
+				rank.hc_atlas = rank_atlas_name[rank_atlas_map[k] ]..'_cs'
 			end
 			
 			if using_bunco_resprites then
-				rank.hc_atlas = rank_atlas_name[rank_atlas_map[k]]..'_hc_b'
-			end
+				rank.hc_atlas = rank_atlas_name[rank_atlas_map[k] ]..'_hc_b'
+			end]]
+			
+			inject_rank_list[#inject_rank_list+1] = {key = k, pos_x = rank.pos.x}
 			
 			--[[rank.lc_atlas = rank_atlas_map[k]
 			rank.hc_atlas = using_bunco_resprites and rank_atlas_map[k]..'_hc_b' or rank_atlas_map[k]..'_hc'
@@ -473,6 +479,39 @@ local function inject_rank_atlas(prefix)
 end
 
 inject_rank_atlas('unstb_')
+
+--Default DeckSkin Injection
+
+for target_suit, _ in pairs(unstbex_lib.extra_suits) do
+	local deckSkin = SMODS.DeckSkins['default_'..target_suit]
+	
+	if deckSkin then 
+		for i = 1, 2 do
+			if deckSkin.palettes[i] then
+				--ds_halberd.palette[p]
+				local pos_style = {fallback_style = 'deck'}
+				
+				for _,rank in ipairs(inject_rank_list) do
+					table.insert(deckSkin.palettes[i].ranks, rank.key)
+				end
+				--ds_halberd.palettes[i].ranks
+				local suit_y = SMODS.Suits[target_suit].pos.y
+				for _,rank in ipairs(inject_rank_list) do
+					local atlas = i==2 and unstbex_lib.extra_suits[target_suit].hc_atlas[rank_atlas_map[rank.key]] or unstbex_lib.extra_suits[target_suit].lc_atlas[rank_atlas_map[rank.key]]
+					pos_style[rank.key] = {atlas = atlas, pos = { x = rank.pos_x, y = suit_y } }
+				end
+
+				deckSkin.palettes[i].pos_style = pos_style
+				deckSkin.pos_style = pos_style
+				
+				--Adds hc_default property to the hc pallete by default (for some reason SMODS didnt)
+				if i==2 then
+					deckSkin.palettes[i].hc_default = true
+				end
+			end
+		end
+	end
+end
 
 --Register Suits for UnStable suit system
 
@@ -1592,7 +1631,7 @@ end
 rank_sh_two_half.is_decimal = true
 rank_sh_two_half.rank_act = {'2', '2.5', '3'}
 rank_sh_two_half.next = { 'unstb_e', '3', 'unstb_Pi', '4' }
-rank_sh_two_half.prev = { '2' }
+rank_sh_two_half.unstb_prev = { '2' }
 rank_sh_two_half.strength_effect = {
             fixed = 2,
             random = false,
@@ -1603,31 +1642,31 @@ rank_sh_two_half.id = max_rank_id_number + 1
 rank_sh_five_half.is_decimal = true
 rank_sh_five_half.rank_act = {'5', '5.5', '6'}
 rank_sh_five_half.next = { '6', '7'}
-rank_sh_five_half.prev = { '5' }
+rank_sh_five_half.unstb_prev = { '5' }
 rank_sh_five_half.id = max_rank_id_number + 2
 
 rank_sh_eight_half.is_decimal = true
 rank_sh_eight_half.rank_act = {'8', '8.5', '9'}
 rank_sh_eight_half.next = { '9', '10'}
-rank_sh_eight_half.prev = { '8' }
+rank_sh_eight_half.unstb_prev = { '8' }
 rank_sh_eight_half.id = max_rank_id_number + 3
 
 rank_sh_butler.is_decimal = true
 rank_sh_butler.rank_act = {'Jack', 'Butler', 'Queen'}
 rank_sh_butler.next = {'Queen', 'showdown_Princess', 'King'}
-rank_sh_butler.prev = { 'Jack' }
+rank_sh_butler.unstb_prev = { 'Jack' }
 rank_sh_butler.id = max_rank_id_number + 4
 
 rank_sh_princess.is_decimal = true
 rank_sh_princess.rank_act = {'Queen', 'Princess', 'King'}
 rank_sh_princess.next = {'King', 'showdown_Lord', 'Ace'}
-rank_sh_princess.prev = { 'Queen' }
+rank_sh_princess.unstb_prev = { 'Queen' }
 rank_sh_princess.id = max_rank_id_number + 5
 
 rank_sh_lord.is_decimal = true
 rank_sh_lord.rank_act = {'King', 'Lord'}
 rank_sh_lord.next = {'Ace'}
-rank_sh_lord.prev = { 'King' }
+rank_sh_lord.unstb_prev = { 'King' }
 rank_sh_lord.id = max_rank_id_number + 6
 
 --Jank, mostly bc Showdown's rank id is forced to be negative for the counterparts, thus ended up mess with the total rank ID orders
