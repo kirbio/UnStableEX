@@ -370,6 +370,8 @@ local rank_atlas_map = {['unstb_0'] = 1,
 						
 local rank_atlas_name = {'unstbex_rank_ex', 'unstbex_rank_ex2'}
 
+local rank_atlas_name_base = {'unstb_rank_ex', 'unstb_rank_ex2'}
+
 --Swap the hc atli with bunco resprites version to match suit colours
 local using_bunco_resprites = false
 if check_mod_active("Bunco") then
@@ -480,33 +482,120 @@ end
 
 inject_rank_atlas('unstb_')
 
---Default DeckSkin Injection
+--Default DeckSkin Injection for all base suits
+
+local target_palette = {'lc', 'hc'} 
 
 for target_suit, _ in pairs(unstbex_lib.extra_suits) do
 	local deckSkin = SMODS.DeckSkins['default_'..target_suit]
 	
 	if deckSkin then 
-		for i = 1, 2 do
-			if deckSkin.palettes[i] then
+		for _, i in ipairs(target_palette) do
+			if deckSkin.palette_map[i] then
 				--ds_halberd.palette[p]
 				local pos_style = {fallback_style = 'deck'}
 				
 				for _,rank in ipairs(inject_rank_list) do
-					table.insert(deckSkin.palettes[i].ranks, rank.key)
+					table.insert(deckSkin.palette_map[i].ranks, rank.key)
 				end
 				--ds_halberd.palettes[i].ranks
 				local suit_y = SMODS.Suits[target_suit].pos.y
 				for _,rank in ipairs(inject_rank_list) do
-					local atlas = i==2 and unstbex_lib.extra_suits[target_suit].hc_atlas[rank_atlas_map[rank.key]] or unstbex_lib.extra_suits[target_suit].lc_atlas[rank_atlas_map[rank.key]]
+					local atlas = i == 'hc' and unstbex_lib.extra_suits[target_suit].hc_atlas[rank_atlas_map[rank.key]] or unstbex_lib.extra_suits[target_suit].lc_atlas[rank_atlas_map[rank.key]]
 					pos_style[rank.key] = {atlas = atlas, pos = { x = rank.pos_x, y = suit_y } }
 				end
 
-				deckSkin.palettes[i].pos_style = pos_style
+				deckSkin.palette_map[i].pos_style = pos_style
 				deckSkin.pos_style = pos_style
 				
 				--Adds hc_default property to the hc pallete by default (for some reason SMODS didnt)
-				if i==2 then
-					deckSkin.palettes[i].hc_default = true
+				if i == 'hc' then
+					deckSkin.palette_map[i].hc_default = true
+				end
+			end
+		end
+	end
+end
+
+--Inject Bunco Recast Contrast
+if check_mod_active("Bunco") then
+	for k, _ in pairs(vanilla_suits) do 
+		local deckSkin = SMODS.DeckSkins['default_'..k]
+		if deckSkin then
+			local palette = deckSkin.palette_map['recast_contrast']
+			
+			local pos_style = {fallback_style = 'deck'}
+				
+			for _,rank in ipairs(inject_rank_list) do
+				table.insert(palette.ranks, rank.key)
+			end
+			
+			local suit_y = SMODS.Suits[k].pos.y
+				for _,rank in ipairs(inject_rank_list) do
+					local atlas = rank_atlas_name[rank_atlas_map[rank.key] ]..'_hc_b'
+					pos_style[rank.key] = {atlas = atlas, pos = { x = rank.pos_x, y = suit_y } }
+				end
+			palette.pos_style = pos_style
+		end
+	end
+end
+
+--Inject All CardSauce Palletes
+--This is a complete Spaghetti I apologize
+if check_mod_active("Cardsauce") then
+	for deck_key, deck_skin in pairs(SMODS.DeckSkins) do 
+		
+		for k, p in pairs(deck_skin.palette_map) do
+			if p.atlas == 'csau_default' then
+				--print('inject skin '..deck_key..' '..k)
+			
+				if p.pos_style and type(p.pos_style) ~= 'table' then
+					p.pos_style = {fallback_style = 'deck'}
+				end
+				pos_style = p.pos_style
+					
+				for _,rank in ipairs(inject_rank_list) do
+					table.insert(p.ranks, rank.key)
+				end
+				
+				local suit_y = SMODS.Suits[deck_skin.suit].pos.y
+				for _,rank in ipairs(inject_rank_list) do
+					local atlas = rank_atlas_name[rank_atlas_map[rank.key] ]..'_cs'
+					pos_style[rank.key] = {atlas = atlas, pos = { x = rank.pos_x, y = suit_y } }
+				end
+			elseif p.atlas == 'cards_1' and k:find('csau_') then --Standard Game Low Contrast
+				--print('inject skin '..deck_key..' '..k)
+			
+				if p.pos_style and type(p.pos_style) ~= 'table' then
+					p.pos_style = {fallback_style = 'deck'}
+				end
+				pos_style = p.pos_style
+					
+				for _,rank in ipairs(inject_rank_list) do
+					table.insert(p.ranks, rank.key)
+				end
+				
+				local suit_y = SMODS.Suits[deck_skin.suit].pos.y
+				for _,rank in ipairs(inject_rank_list) do
+					local atlas = rank_atlas_name_base[rank_atlas_map[rank.key] ]
+					pos_style[rank.key] = {atlas = atlas, pos = { x = rank.pos_x, y = suit_y } }
+				end
+			elseif p.atlas == 'cards_2' and k:find('csau_') then --Standard Game High Contrast
+				--print('inject skin '..deck_key..' '..k)
+			
+				if p.pos_style and type(p.pos_style) ~= 'table' then
+					p.pos_style = {fallback_style = 'deck'}
+				end
+				pos_style = p.pos_style
+					
+				for _,rank in ipairs(inject_rank_list) do
+					table.insert(p.ranks, rank.key)
+				end
+				
+				local suit_y = SMODS.Suits[deck_skin.suit].pos.y
+				for _,rank in ipairs(inject_rank_list) do
+					local atlas = rank_atlas_name_base[rank_atlas_map[rank.key] ]..'_hc'
+					pos_style[rank.key] = {atlas = atlas, pos = { x = rank.pos_x, y = suit_y } }
 				end
 			end
 		end
