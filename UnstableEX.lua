@@ -545,57 +545,60 @@ end
 if check_mod_active("Cardsauce") then
 	for deck_key, deck_skin in pairs(SMODS.DeckSkins) do 
 		
-		for k, p in pairs(deck_skin.palette_map) do
-			if p.atlas == 'csau_default' then
-				--print('inject skin '..deck_key..' '..k)
-			
-				if p.pos_style and type(p.pos_style) ~= 'table' then
-					p.pos_style = {fallback_style = 'deck'}
-				end
-				pos_style = p.pos_style
-					
-				for _,rank in ipairs(inject_rank_list) do
-					table.insert(p.ranks, rank.key)
-				end
+		--Skip if there is no pallete
+		if deck_skin.palette_map then
+			for k, p in pairs(deck_skin.palette_map) do
+				if p.atlas == 'csau_default' then
+					--print('inject skin '..deck_key..' '..k)
 				
-				local suit_y = SMODS.Suits[deck_skin.suit].pos.y
-				for _,rank in ipairs(inject_rank_list) do
-					local atlas = rank_atlas_name[rank_atlas_map[rank.key] ]..'_cs'
-					pos_style[rank.key] = {atlas = atlas, pos = { x = rank.pos_x, y = suit_y } }
-				end
-			elseif p.atlas == 'cards_1' and k:find('csau_') then --Standard Game Low Contrast
-				--print('inject skin '..deck_key..' '..k)
-			
-				if p.pos_style and type(p.pos_style) ~= 'table' then
-					p.pos_style = {fallback_style = 'deck'}
-				end
-				pos_style = p.pos_style
+					if p.pos_style and type(p.pos_style) ~= 'table' then
+						p.pos_style = {fallback_style = 'deck'}
+					end
+					pos_style = p.pos_style
+						
+					for _,rank in ipairs(inject_rank_list) do
+						table.insert(p.ranks, rank.key)
+					end
 					
-				for _,rank in ipairs(inject_rank_list) do
-					table.insert(p.ranks, rank.key)
-				end
+					local suit_y = SMODS.Suits[deck_skin.suit].pos.y
+					for _,rank in ipairs(inject_rank_list) do
+						local atlas = rank_atlas_name[rank_atlas_map[rank.key] ]..'_cs'
+						pos_style[rank.key] = {atlas = atlas, pos = { x = rank.pos_x, y = suit_y } }
+					end
+				elseif p.atlas == 'cards_1' and k:find('csau_') then --Standard Game Low Contrast
+					--print('inject skin '..deck_key..' '..k)
 				
-				local suit_y = SMODS.Suits[deck_skin.suit].pos.y
-				for _,rank in ipairs(inject_rank_list) do
-					local atlas = rank_atlas_name_base[rank_atlas_map[rank.key] ]
-					pos_style[rank.key] = {atlas = atlas, pos = { x = rank.pos_x, y = suit_y } }
-				end
-			elseif p.atlas == 'cards_2' and k:find('csau_') then --Standard Game High Contrast
-				--print('inject skin '..deck_key..' '..k)
-			
-				if p.pos_style and type(p.pos_style) ~= 'table' then
-					p.pos_style = {fallback_style = 'deck'}
-				end
-				pos_style = p.pos_style
+					if p.pos_style and type(p.pos_style) ~= 'table' then
+						p.pos_style = {fallback_style = 'deck'}
+					end
+					pos_style = p.pos_style
+						
+					for _,rank in ipairs(inject_rank_list) do
+						table.insert(p.ranks, rank.key)
+					end
 					
-				for _,rank in ipairs(inject_rank_list) do
-					table.insert(p.ranks, rank.key)
-				end
+					local suit_y = SMODS.Suits[deck_skin.suit].pos.y
+					for _,rank in ipairs(inject_rank_list) do
+						local atlas = rank_atlas_name_base[rank_atlas_map[rank.key] ]
+						pos_style[rank.key] = {atlas = atlas, pos = { x = rank.pos_x, y = suit_y } }
+					end
+				elseif p.atlas == 'cards_2' and k:find('csau_') then --Standard Game High Contrast
+					--print('inject skin '..deck_key..' '..k)
 				
-				local suit_y = SMODS.Suits[deck_skin.suit].pos.y
-				for _,rank in ipairs(inject_rank_list) do
-					local atlas = rank_atlas_name_base[rank_atlas_map[rank.key] ]..'_hc'
-					pos_style[rank.key] = {atlas = atlas, pos = { x = rank.pos_x, y = suit_y } }
+					if p.pos_style and type(p.pos_style) ~= 'table' then
+						p.pos_style = {fallback_style = 'deck'}
+					end
+					pos_style = p.pos_style
+						
+					for _,rank in ipairs(inject_rank_list) do
+						table.insert(p.ranks, rank.key)
+					end
+					
+					local suit_y = SMODS.Suits[deck_skin.suit].pos.y
+					for _,rank in ipairs(inject_rank_list) do
+						local atlas = rank_atlas_name_base[rank_atlas_map[rank.key] ]..'_hc'
+						pos_style[rank.key] = {atlas = atlas, pos = { x = rank.pos_x, y = suit_y } }
+					end
 				end
 			end
 		end
@@ -1200,9 +1203,10 @@ end
 if check_mod_active("Cryptid") then
 
 --Special interaction w/ Plagiarism and rigged
---[[
+
 local j_plagiarism = SMODS.Centers['j_unstb_plagiarism']
 
+--[[
 if j_plagiarism then
 
 local ref_j_plagiarism_calculate = j_plagiarism.calculate
@@ -1224,9 +1228,11 @@ j_plagiarism.calculate = function(self, card, context)
 			end
 		end
 		
+		local ret_execute = {}
+		
 		if other_joker then
 			for i = 1, #other_joker do
-				if other_joker[i] and other_joker[i] ~= self then 
+				if other_joker[i] and other_joker[i] ~= card and other_joker[i] ~= context.blueprint_card then 
 					--local newcontext = context
 					context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
 					context.blueprint_card = context.blueprint_card or card
@@ -1253,12 +1259,43 @@ j_plagiarism.calculate = function(self, card, context)
 						other_joker_ret.no_callback = true
 						
 						if other_joker_ret then 
-							--Jank, might result in message appear at wrong place idk but at least it should be executed properly
-							SMODS.calculate_effect(other_joker_ret, context.individual and context.other_card or eff_card)
+							--SMODS.calculate_effect(other_joker_ret, context.individual and context.other_card or eff_card)
+							ret_execute[#ret_execute+1] = {ret = other_joker_ret, card = context.individual and context.other_card or eff_card}
 							--return other_joker_ret
 						end
 					end
 				end
+			end
+		
+			--Jank: Handle Retriggers manually
+			if context.repetition then
+				--Merge table
+				local ret_table = {blueprinted = true}
+				
+				for i = 1, #ret_execute do
+					for k, v in pairs(ret_execute[i].ret) do
+						if not ret_table[k] then
+							ret_table[k] = v
+						else
+							if type(v) == "number"
+							--and not ret_execute[i].ret.blueprinted
+							then
+							
+								print(inspect(ret_execute[i].ret))
+							
+								ret_table[k] = ret_table[k] + v
+							end
+						end
+					end
+				end
+				
+				return ret_table
+				
+			end
+		
+			--Other effects
+			for i = 1, #ret_execute do
+				SMODS.calculate_effect(ret_execute[i].ret, ret_execute[i].card)
 			end
 		end
 		
@@ -1268,8 +1305,8 @@ j_plagiarism.calculate = function(self, card, context)
 	
 end
 
-end]]
-
+end
+]]
 
 --Add appropiate Jokers to the pool
 
