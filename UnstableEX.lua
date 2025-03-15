@@ -401,12 +401,13 @@ if check_mod_active("Six_Suit") then
 end
 
 if check_mod_active("Inks_Color") then
-	unstbex_lib.init_suit_compat('ink_Inks', 'inkscolor', true)
-	unstbex_lib.init_suit_compat('ink_Colors', 'inkscolor', true)
+	unstbex_lib.init_suit_compat('ink_Inks', 'inkscolor')
+	unstbex_lib.init_suit_compat('ink_Colors', 'inkscolor')
 end
 
 if check_mod_active("MtJ") then
 	unstbex_lib.init_suit_compat('mtg_Clovers', 'mtj')
+	unstbex_lib.init_suit_compat('mtg_Suitless', 'mtj')
 end
 
 if check_mod_active("Minty") then
