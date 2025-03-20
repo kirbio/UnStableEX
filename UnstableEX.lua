@@ -1672,6 +1672,12 @@ end
 
 end
 
+--Paperback Compat
+if check_mod_active("Paperback") then
+	--Blacklist Dichrome Edition from Siphon (because it cannot appear on Playing Cards)
+	unstb_global.register_siphon_blacklist({'e_paperback_dichrome'})
+end
+
 --DnDJ Compat
 if check_mod_active("DnDJ") then
 
